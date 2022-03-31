@@ -178,9 +178,9 @@ import static android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW;
             // sync with the Activity. We use the Fragment's Lifecycle because it is possible that the
             // attached Activity is not a LifecycleOwner.
             Log.v(TAG, "Attaching FlutterEngine to the Activity that owns this Fragment.");
-            flutterEngine
-                    .getActivityControlSurface()
-                    .attachToActivity(host.getActivity(), host.getLifecycle());
+//            flutterEngine
+//                    .getActivityControlSurface()
+//                    .attachToActivity(host.getActivity(), host.getLifecycle());
         }
 
         host.configureFlutterEngine(flutterEngine);
@@ -387,7 +387,7 @@ import static android.content.ComponentCallbacks2.TRIM_MEMORY_RUNNING_LOW;
             // 解决两个 FlutterActivity 中间存在一个原生的 Activity 的时候，pop 到第一个原生 FlutterActivity 后键盘无法弹出的问题
             Activity activity = host.getActivity();
             if (activity != null) {
-                flutterEngine.getActivityControlSurface().attachToActivity(host.getActivity(), host.getLifecycle());
+                //flutterEngine.getActivityControlSurface().attachToActivity(host.getActivity(), host.getLifecycle());
                 if (host.shouldAttachEngineToActivity() && flutterView != null) {
                     flutterView.reattachToFlutterEngine();
                 }

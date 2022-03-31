@@ -27,7 +27,8 @@ import com.hellobike.flutter.thrio.navigator.FlutterIntentBuilder
 import com.hellobike.flutter.thrio.navigator.IntentBuilder
 import com.hellobike.flutter.thrio.registry.RegistryMap
 
-internal object ModuleIntentBuilders {
+
+object ModuleIntentBuilders {
 
     val intentBuilders by lazy { RegistryMap<String, IntentBuilder>() }
 

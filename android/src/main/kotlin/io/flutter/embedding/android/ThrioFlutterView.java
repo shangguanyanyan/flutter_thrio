@@ -902,7 +902,7 @@ public class ThrioFlutterView extends FrameLayout implements MouseCursorPlugin.M
         localizationPlugin.sendLocalesToFlutter(getResources().getConfiguration());
         sendViewportMetricsToFlutter();
 
-        flutterEngine.getPlatformViewsController().attachToView(this);
+        //flutterEngine.getPlatformViewsController().attachToView(this);
 
         // Notify engine attachment listeners of the attachment.
         for (FlutterEngineAttachmentListener listener : flutterEngineAttachmentListeners) {
@@ -985,7 +985,7 @@ public class ThrioFlutterView extends FrameLayout implements MouseCursorPlugin.M
 //        localizationPlugin.sendLocalesToFlutter(getResources().getConfiguration());
 //        sendViewportMetricsToFlutter();
 
-        flutterEngine.getPlatformViewsController().attachToView(this);
+        //flutterEngine.getPlatformViewsController().attachToView(this);
 
         // Notify engine attachment listeners of the attachment.
         for (FlutterEngineAttachmentListener listener : flutterEngineAttachmentListeners) {
@@ -1025,7 +1025,7 @@ public class ThrioFlutterView extends FrameLayout implements MouseCursorPlugin.M
         flutterEngine.getPlatformViewsController().detachFromView();
 
         // Disconnect the FlutterEngine's PlatformViewsController from the AccessibilityBridge.
-        flutterEngine.getPlatformViewsController().detachAccessibiltyBridge();
+        //flutterEngine.getPlatformViewsController().detachAccessibiltyBridge();
 
         // Disconnect and clean up the AccessibilityBridge.
         if (accessibilityBridge != null) {

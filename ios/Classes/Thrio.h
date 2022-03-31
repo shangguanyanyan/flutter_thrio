@@ -45,6 +45,8 @@
 #import "NavigatorPageRoute.h"
 #import "NavigatorRouteObserverProtocol.h"
 #import "NavigatorRouteSettings.h"
+#import "NavigatorFlutterEngineFactory.h"
+#import "NavigatorRouteSendChannel.h"
 #import "ThrioNavigator.h"
 #import "UINavigationController+Navigator.h"
 #import "UIViewController+HidesNavigationBar.h"
@@ -53,5 +55,6 @@
 #import "ThrioRegistryMap.h"
 #import "ThrioRegistrySet.h"
 #import "ThrioRegistrySetMap.h"
+
 
 #endif /* Thrio_h */

@@ -30,7 +30,7 @@ import com.hellobike.flutter.thrio.NullableBooleanCallback
 import com.hellobike.flutter.thrio.extension.getEntrypoint
 import com.hellobike.flutter.thrio.navigator.*
 
-open class ThrioActivity : ThrioFlutterActivity() {
+open class ThrioActivity : FlutterActivity() {
     companion object {
         var isPushed = false
     }

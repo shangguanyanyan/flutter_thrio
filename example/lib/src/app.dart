@@ -28,7 +28,7 @@ class _MainAppState extends State<MainApp> {
   @override
   Widget build(BuildContext context) => ExcludeSemantics(
         child: NavigatorMaterialApp(
-          home: const NavigatorHome(showRestartButton: true),
+          //home: const NavigatorHome(showRestartButton: true),
           builder: (context, child) => Container(
             child: child,
           ),

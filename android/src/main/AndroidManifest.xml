@@ -8,6 +8,7 @@
             android:screenOrientation="sensor"
             android:hardwareAccelerated="true"
             android:launchMode="standard"
+            android:exported="true"
             android:theme="@style/Theme.Thrio.Default"
             android:windowSoftInputMode="adjustResize" />
     </application>

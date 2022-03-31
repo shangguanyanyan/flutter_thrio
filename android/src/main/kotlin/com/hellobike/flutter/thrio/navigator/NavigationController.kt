@@ -37,6 +37,7 @@ import com.hellobike.flutter.thrio.extension.getRouteSettings
 import com.hellobike.flutter.thrio.module.ModuleIntentBuilders
 import com.hellobike.flutter.thrio.module.ModuleJsonSerializers
 import com.hellobike.flutter.thrio.module.ModuleRouteObservers
+import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.ThrioActivity
 import java.lang.ref.WeakReference
 
@@ -393,7 +394,7 @@ internal object NavigationController : Application.ActivityLifecycleCallbacks {
                 poppedToHolder?.activity?.get()?.let {
                     poppedToHolder = null
                     if (it is ThrioActivity) {
-                        it.onResume()
+                        //it.onResume()
                     }
                 }
                 return
