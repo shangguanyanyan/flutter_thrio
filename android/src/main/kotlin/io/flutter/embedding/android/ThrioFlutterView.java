@@ -675,9 +675,10 @@ public class ThrioFlutterView extends FrameLayout implements MouseCursorPlugin.M
      */
     @Override
     public boolean checkInputConnectionProxy(View view) {
-        return flutterEngine != null
+
+        return /*flutterEngine != null
                 ? flutterEngine.getPlatformViewsController().checkInputConnectionProxy(view)
-                : super.checkInputConnectionProxy(view);
+                : */super.checkInputConnectionProxy(view);
     }
 
     /**
