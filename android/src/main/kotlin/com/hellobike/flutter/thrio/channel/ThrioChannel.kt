@@ -91,7 +91,7 @@ open class ThrioChannel constructor(
                 callback?.invoke(value)
             }
 
-            override fun error(errorCode: String?, errorMessage: String?, errorDetails: Any?) {
+            override fun error(errorCode: String, errorMessage: String?, errorDetails: Any?) {
                 Log.e("ThrioChannel", "call $method return error: $errorMessage")
             }
 
