@@ -34,8 +34,8 @@
         panGestureRecognizer.delaysTouchesBegan = YES;
         panGestureRecognizer.edges = UIRectEdgeLeft;
         id target = self.interactivePopGestureRecognizer.delegate;
-        SEL action = NSSelectorFromString(@"handleNavigationTransition:");
-        [panGestureRecognizer addTarget:target action:action];
+        //SEL action = NSSelectorFromString(@"handleNavigationTransition:");
+        //[panGestureRecognizer addTarget:target action:action];
 
         objc_setAssociatedObject(self,
                                  _cmd,
