@@ -27,10 +27,10 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
-import com.hellobike.flutter.thrio.BooleanCallback
-import com.hellobike.flutter.thrio.NullableBooleanCallback
-import com.hellobike.flutter.thrio.extension.getEntrypoint
-import com.hellobike.flutter.thrio.navigator.*
+import com.foxsofter.flutter_thrio.BooleanCallback
+import com.foxsofter.flutter_thrio.NullableBooleanCallback
+import com.foxsofter.flutter_thrio.extension.getEntrypoint
+import com.foxsofter.flutter_thrio.navigator.*
 
 open class ThrioActivity : FlutterActivity() {
     companion object {
@@ -46,7 +46,6 @@ open class ThrioActivity : FlutterActivity() {
         // 延伸显示区域到刘海
         val lp = window.attributes
         lp.layoutInDisplayCutoutMode =
-            WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         // 设置页面全屏显示
         window.attributes = lp
         val decorView = window.decorView
@@ -82,6 +81,10 @@ open class ThrioActivity : FlutterActivity() {
             NavigationController.Push.push(initialUrl!!, null, false) {}
         }
         super.onFlutterUiDisplayed()
+    }
+
+    override public fun onResume() {
+        super.onResume()
     }
 
     override fun shouldAttachEngineToActivity(): Boolean = true
