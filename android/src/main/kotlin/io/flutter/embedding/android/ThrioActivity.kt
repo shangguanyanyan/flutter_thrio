@@ -45,7 +45,8 @@ open class ThrioActivity : FlutterActivity() {
         // 延伸显示区域到刘海
         // 延伸显示区域到刘海
         val lp = window.attributes
-        lp.layoutInDisplayCutoutMode =
+        lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+
         // 设置页面全屏显示
         window.attributes = lp
         val decorView = window.decorView

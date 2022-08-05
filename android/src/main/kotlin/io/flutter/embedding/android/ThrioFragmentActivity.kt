@@ -26,10 +26,10 @@ package io.flutter.embedding.android
 
 import android.content.pm.PackageManager
 import android.os.Bundle
-import com.hellobike.flutter.thrio.BooleanCallback
-import com.hellobike.flutter.thrio.NullableBooleanCallback
-import com.hellobike.flutter.thrio.extension.getEntrypoint
-import com.hellobike.flutter.thrio.navigator.*
+import com.foxsofter.flutter_thrio.BooleanCallback
+import com.foxsofter.flutter_thrio.NullableBooleanCallback
+import com.foxsofter.flutter_thrio.extension.getEntrypoint
+import com.foxsofter.flutter_thrio.navigator.*
 
 open class ThrioFragmentActivity : FlutterActivity() {
     companion object {

@@ -29,7 +29,6 @@ import android.content.Intent
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.android.FlutterActivityLaunchConfigs
 import io.flutter.embedding.android.ThrioActivity
-import io.flutter.embedding.android.FlutterActivity
 
 open class FlutterIntentBuilder : IntentBuilder {
 
