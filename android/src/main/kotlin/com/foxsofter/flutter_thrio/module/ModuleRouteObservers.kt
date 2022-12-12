@@ -29,7 +29,7 @@ import com.foxsofter.flutter_thrio.navigator.RouteObserver
 import com.foxsofter.flutter_thrio.navigator.RouteSettings
 import com.foxsofter.flutter_thrio.registry.RegistrySet
 
-internal object ModuleRouteObservers : RouteObserver {
+object ModuleRouteObservers : RouteObserver {
     private const val TAG = "RouteObservers"
 
     val observers by lazy { RegistrySet<RouteObserver>() }

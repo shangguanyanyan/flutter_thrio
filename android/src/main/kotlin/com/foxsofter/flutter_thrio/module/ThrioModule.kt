@@ -93,6 +93,9 @@ open class ThrioModule {
 
     protected open fun onModuleInit(moduleContext: ModuleContext) {}
 
+    protected open fun onReadyCallback(engine: FlutterEngine) {}
+
+
     protected var navigatorLogEnabled
         get() = Log.navigatorLogging
         set(enabled) {
@@ -114,4 +117,5 @@ open class ThrioModule {
             }
         }
     }
+
 }

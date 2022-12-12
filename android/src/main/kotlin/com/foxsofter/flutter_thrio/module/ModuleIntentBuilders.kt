@@ -27,7 +27,7 @@ import com.foxsofter.flutter_thrio.navigator.FlutterIntentBuilder
 import com.foxsofter.flutter_thrio.navigator.IntentBuilder
 import com.foxsofter.flutter_thrio.registry.RegistryMap
 
-internal object ModuleIntentBuilders {
+object ModuleIntentBuilders {
 
     val intentBuilders by lazy { RegistryMap<String, IntentBuilder>() }
 

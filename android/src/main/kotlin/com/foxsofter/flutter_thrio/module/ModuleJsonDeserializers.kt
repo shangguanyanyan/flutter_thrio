@@ -26,7 +26,7 @@ package com.foxsofter.flutter_thrio.module
 import com.foxsofter.flutter_thrio.JsonDeserializer
 import com.foxsofter.flutter_thrio.registry.RegistryMap
 
-internal object ModuleJsonDeserializers {
+object ModuleJsonDeserializers {
     private const val TAG = "ModuleJsonDeserializers"
 
     val deserializers by lazy { RegistryMap<String, JsonDeserializer<*>>() }

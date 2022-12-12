@@ -26,7 +26,7 @@ package com.foxsofter.flutter_thrio.module
 import com.foxsofter.flutter_thrio.navigator.*
 import com.foxsofter.flutter_thrio.registry.RegistrySet
 
-internal object ModulePageObservers : PageObserver {
+object ModulePageObservers : PageObserver {
     private const val TAG = "ModulePageObservers"
 
     val observers by lazy { RegistrySet<PageObserver>() }

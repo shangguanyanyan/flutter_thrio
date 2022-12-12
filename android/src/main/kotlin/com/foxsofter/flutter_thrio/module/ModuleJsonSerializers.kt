@@ -26,7 +26,7 @@ package com.foxsofter.flutter_thrio.module
 import com.foxsofter.flutter_thrio.JsonSerializer
 import com.foxsofter.flutter_thrio.registry.RegistryMap
 
-internal object ModuleJsonSerializers {
+object ModuleJsonSerializers {
 
     private const val TAG = "ModuleJsonSerializers"
 
