@@ -172,11 +172,7 @@ internal class RouteReceiveChannel(
     }
 
     private fun onHotRestart() {
-        channel.registryMethod("hotRestart") { _, result ->
-            if (!FlutterEngineFactory.isMultiEngineEnabled) {
-                result(NavigationController.hotRestart())
-            }
-        }
+        channel.registryMethod("hotRestart") { _, _ -> }
     }
 
 }
