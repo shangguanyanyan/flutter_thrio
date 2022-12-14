@@ -26,6 +26,11 @@ package io.flutter.embedding.android
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Bundle
+import android.view.View
+import android.view.WindowManager
+import androidx.annotation.RequiresApi
 import com.foxsofter.flutter_thrio.BooleanCallback
 import com.foxsofter.flutter_thrio.IntCallback
 import com.foxsofter.flutter_thrio.extension.getEntrypoint
@@ -127,4 +132,20 @@ open class ThrioFlutterActivity : FlutterActivity(), ThrioFlutterActivityBase {
         intent.putExtra(NAVIGATION_ROUTE_SETTINGS_KEY, settingsData)
         super.setIntent(intent)
     }
+
+    @RequiresApi(Build.VERSION_CODES.P)
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        // 延伸显示区域到刘海
+        // 延伸显示区域到刘海
+        val lp = window.attributes
+        lp.layoutInDisplayCutoutMode =
+            WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        // 设置页面全屏显示
+        window.attributes = lp
+        val decorView = window.decorView
+        decorView.systemUiVisibility =
+            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+    }
+
 }
