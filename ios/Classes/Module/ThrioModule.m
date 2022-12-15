@@ -45,17 +45,19 @@ static NSMutableDictionary *modules;
 
 static ThrioModule *_module;
 
-+ (void)init:(ThrioModule *)module preboot:(BOOL)preboot {
+
++ (void)init:(ThrioModule *)module preboot:(BOOL)preboot readyBlock:(ThrioEngineReadyCallback _Nullable)readyBlock{
     NavigatorFlutterEngineFactory.shared.mainEnginePreboot = preboot;
     ThrioModuleContext *moduleContext = [[ThrioModuleContext alloc] init];
     _module = module;
+    _module.readyBlock = readyBlock;
     [_module registerModule:module withModuleContext:moduleContext];
     [_module initModule];
 }
 
 + (void)initMultiEngine:(ThrioModule *)module {
     NavigatorFlutterEngineFactory.shared.multiEngineEnabled = YES;
-    [ThrioModule init:module preboot:NO];
+    [ThrioModule init:module preboot:NO readyBlock:nil];
 }
 
 + (ThrioModule *_Nonnull)rootModule {
@@ -147,6 +149,7 @@ static ThrioModule *_module;
         if (block) {
             block(engine);
         }
+        self->_readyBlock(engine);
     };
     return [NavigatorFlutterEngineFactory.shared startupWithEntrypoint:entrypoint
                                                             readyBlock:readyBlock];

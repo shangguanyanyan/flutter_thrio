@@ -29,12 +29,15 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic, readonly) ThrioModuleContext *moduleContext;
 
+@property (nonatomic, strong) ThrioEngineReadyCallback readyBlock;
+
+
 /// A function for module initialization that will call  the `onPageBuilderRegister:`, `onModuleInit:`
 /// and `onModuleAsyncInit:` methods of all modules.
 ///
 /// Should only be called once when the app startups.
 ///
-+ (void)init:(ThrioModule *)module preboot:(BOOL)preboot;
++ (void)init:(ThrioModule *)module preboot:(BOOL)preboot readyBlock:(ThrioEngineReadyCallback _Nullable)readyBlock;
 
 + (void)initMultiEngine:(ThrioModule *)module;
 

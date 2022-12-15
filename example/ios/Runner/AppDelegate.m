@@ -12,7 +12,7 @@
 
 - (BOOL)              application:(UIApplication *)application
     didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
-    [ThrioModule init:[MainModule new] preboot:NO];
+    [ThrioModule init:[MainModule new] preboot:NO readyBlock:^(NavigatorFlutterEngine * _Nonnull)];
     UINavigationController *nvc = [[NavigatorNavigationController alloc] initWithUrl:@"/biz/biz1/flutter1/home" params:nil];
     self.window.rootViewController = nvc;
     [self.window makeKeyAndVisible];
