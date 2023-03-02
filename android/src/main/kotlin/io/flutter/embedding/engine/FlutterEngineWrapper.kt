@@ -1,17 +1,10 @@
-package io.flutter.embedding.engine;
+package io.flutter.embedding.engine
 
-import android.content.Context;
+import android.content.Context
+import io.flutter.embedding.engine.loader.FlutterLoader
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
-import io.flutter.embedding.engine.loader.FlutterLoader;
-
-public class FlutterEngineWrapper extends FlutterEngine {
-    @SuppressWarnings("ConstantConditions")
-    public FlutterEngineWrapper(@NonNull Context context,
-                                @Nullable FlutterLoader flutterLoader,
-                                @Nullable FlutterJNI flutterJNI) {
-        super(context, flutterLoader, flutterJNI);
-    }
-}
+open class FlutterEngineWrapper(
+    context: Context,
+    flutterLoader: FlutterLoader?,
+    flutterJNI: FlutterJNI?
+) : FlutterEngine(context, flutterLoader, flutterJNI!!)

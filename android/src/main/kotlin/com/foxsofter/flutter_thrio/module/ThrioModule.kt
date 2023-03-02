@@ -29,11 +29,12 @@ import com.foxsofter.flutter_thrio.navigator.ActivityDelegate
 import com.foxsofter.flutter_thrio.navigator.FlutterEngine
 import com.foxsofter.flutter_thrio.navigator.FlutterEngineFactory
 import com.foxsofter.flutter_thrio.navigator.Log
+import com.foxsofter.flutter_thrio.navigator.FlutterEngineReadyListener
 
 open class ThrioModule {
 var onReadyListener: FlutterEngineReadyListener? = null    
 companion object {
-        internal val root by lazy { ThrioModule() }f
+        internal val root by lazy { ThrioModule() }
 
         @JvmStatic
         fun init(module: ThrioModule, context: Application, onReadyListener: FlutterEngineReadyListener? = null) {
