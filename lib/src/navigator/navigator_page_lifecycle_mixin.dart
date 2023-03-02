@@ -19,105 +19,239 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+import 'dart:async';
+
+import 'package:async/async.dart';
 import 'package:flutter/widgets.dart';
 
-import '../extension/thrio_build_context.dart';
-import '../extension/thrio_iterable.dart';
 import '../module/module_anchor.dart';
+import 'navigator_logger.dart';
+import 'navigator_page.dart';
 import 'navigator_page_observer.dart';
-import 'navigator_route.dart';
 import 'navigator_route_settings.dart';
-import 'navigator_types.dart';
-import 'navigator_widget.dart';
+import 'thrio_navigator_implement.dart';
 
 mixin NavigatorPageLifecycleMixin<T extends StatefulWidget> on State<T> {
-  NavigatorRoute? _route;
-  VoidCallback? _pageObserverCallback;
+  late RouteSettings _current;
+  late final _currentObserver = _CurrentLifecycleObserver(this);
+  VoidCallback? _currentObserverCallback;
 
-  String? get url => null;
+  late List<RouteSettings> _anchors;
+  final _anchorsObserverCallbacks = <VoidCallback>[];
+
+  final _initAppear = AsyncMemoizer<void>();
+
+  late final _observer = _NavigatorMountedObserver(this);
+
+  bool _unmounted = false;
+
+  bool _disposed = false;
+
+  bool get disposed => _disposed;
 
   @override
   void initState() {
     super.initState();
-
-    final state = context.tryStateOf<NavigatorWidgetState>();
-    final route = url == null
-        ? state?.history.last
-        : state?.history
-            .lastWhereOrNull((final it) => it is NavigatorRoute && it.settings.url == url);
-    if (route != null && route is NavigatorRoute) {
-      Future(() => didAppear(route.settings));
+    if (mounted) {
+      ThrioNavigatorImplement.shared().observerManager.observers.add(_observer);
     }
   }
 
-  void didAppear(final RouteSettings settings) {}
-
-  void didDisappear(final RouteSettings settings) {}
-
   @override
   void didChangeDependencies() {
-    if (_pageObserverCallback != null) {
-      _pageObserverCallback?.call();
-      _pageObserverCallback = null;
-    }
-    if (url == null) {
-      final state = context.stateOf<NavigatorWidgetState>();
-      final route = state.history.last;
-      if (route is NavigatorRoute) {
-        _route = route;
-
-        _pageObserverCallback = anchor.pageLifecycleObservers.registry(
-          route.settings.url!,
-          _PageLifecyclePageObserver(this),
-        );
-      }
-    } else {
-      _pageObserverCallback = anchor.pageLifecycleObservers.registry(
-        url!,
-        _PageLifecyclePageObserver(this),
-      );
-    }
-
     super.didChangeDependencies();
+    _init();
+    _initAppear.runOnce(() {
+      if (!_current.isBuilt || (_current.isSelected != false)) {
+        Future(() => didAppear(_current));
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(final T oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _init();
+  }
+
+  void didAppear(final RouteSettings settings) {
+    verbose(
+        'NavigatorPageLifecycleMixin didAppear: ${settings.name}, $runtimeType, hash: ${settings.hashCode}');
+  }
+
+  void didDisappear(final RouteSettings settings) {
+    verbose(
+        'NavigatorPageLifecycleMixin didDisappear: ${settings.name}, $runtimeType, hash: ${settings.hashCode}');
   }
 
   @override
   void dispose() {
-    _pageObserverCallback?.call();
+    _disposed = true;
+
+    _currentObserverCallback?.call();
+    for (final callback in _anchorsObserverCallbacks) {
+      callback();
+    }
+
+    _doDispose();
+
     super.dispose();
+  }
+
+  void _init() {
+    _current = NavigatorPage.routeSettingsOf(context);
+    _currentObserverCallback?.call();
+    _currentObserverCallback =
+        anchor.pageLifecycleObservers.registry(_current.url, _currentObserver);
+
+    _anchors = NavigatorPage.routeSettingsListOf(context);
+    // 链路上重复的 settings 要去掉
+    _anchors.removeWhere((final it) => it.name == _current.name);
+
+    verbose(
+        'NavigatorPageLifecycleMixin current: $runtimeType, hash: ${_current.hashCode} ${_current.name} ');
+    verbose(
+        'NavigatorPageLifecycleMixin anchors: ${_anchors.map((final e) => e.name).join(',')} ');
+
+    for (final callback in _anchorsObserverCallbacks) {
+      callback();
+    }
+    _anchorsObserverCallbacks.clear();
+    for (final it in _anchors) {
+      _anchorsObserverCallbacks.add(anchor.pageLifecycleObservers.registry(
+        it.url,
+        _AnchorLifecycleObserver(this, it),
+      ));
+    }
+  }
+
+  void _doDispose() {
+    Future(() => ThrioNavigatorImplement.shared()
+        .observerManager
+        .observers
+        .remove(_observer));
+
+    _unmounted = true;
   }
 }
 
-class _PageLifecyclePageObserver with NavigatorPageObserver {
-  const _PageLifecyclePageObserver(this.delegate);
+// ignore: prefer_mixin
+class _CurrentLifecycleObserver with NavigatorPageObserver {
+  _CurrentLifecycleObserver(this._delegate);
 
-  final NavigatorPageLifecycleMixin delegate;
+  final NavigatorPageLifecycleMixin _delegate;
+
+  @override
+  RouteSettings? get settings => _delegate._current;
 
   @override
   void didAppear(final RouteSettings routeSettings) {
-    final callback = delegate.didAppear;
+    // state not mounted, not trigger didAppear
+    if (_delegate._unmounted) {
+      return;
+    }
+    if (_delegate._current.name == routeSettings.name &&
+        routeSettings.isSelected != false) {
+      _delegate.didAppear(routeSettings);
+    }
+  }
+
+  @override
+  void didDisappear(final RouteSettings routeSettings) {
+    // state not disposed and not mounted, not trigger didDisappear
+    if (!_delegate._disposed && _delegate._unmounted) {
+      return;
+    }
+    if (_delegate._current.name == routeSettings.name &&
+        routeSettings.isSelected != false) {
+      _delegate.didDisappear(routeSettings);
+    }
+  }
+}
+
+class _AnchorLifecycleObserver with NavigatorPageObserver {
+  _AnchorLifecycleObserver(this._delegate, this._anchor);
+
+  final NavigatorPageLifecycleMixin _delegate;
+
+  final RouteSettings _anchor;
+
+  @override
+  RouteSettings? get settings => _anchor;
+
+  @override
+  void didAppear(final RouteSettings routeSettings) {
+    final callback = _delegate._currentObserver.didAppear;
     _lifecycleCallback(callback, routeSettings);
   }
 
   @override
   void didDisappear(final RouteSettings routeSettings) {
-    final callback = delegate.didDisappear;
+    final callback = _delegate._currentObserver.didDisappear;
     _lifecycleCallback(callback, routeSettings);
   }
 
   void _lifecycleCallback(
-    final NavigatorPageObserverCallback? callback,
+    final void Function(RouteSettings) callback,
     final RouteSettings routeSettings,
   ) {
-    if (callback != null) {
-      if (delegate.url == null) {
-        final route = delegate._route;
-        if (route != null && route.settings.name == routeSettings.name) {
-          callback(route.settings);
-        }
-      } else {
-        callback(routeSettings);
-      }
+    if (_anchor.name != routeSettings.name ||
+        _delegate._current.isSelected == false) {
+      return;
+    }
+    final idx = _delegate._anchors
+        .indexWhere((final it) => it.name == routeSettings.name);
+    final ins = _delegate._anchors.sublist(0, idx);
+    if (ins.every((final it) => it.isSelected == true)) {
+      callback(_delegate._current);
+    }
+  }
+}
+
+// ignore: prefer_mixin
+class _NavigatorMountedObserver with NavigatorObserver {
+  _NavigatorMountedObserver(this._delegate);
+
+  final NavigatorPageLifecycleMixin _delegate;
+
+  @override
+  void didPop(
+    final Route<dynamic> route,
+    final Route<dynamic>? previousRoute,
+  ) {
+    if (_delegate._currentObserverCallback == null) {
+      return;
+    }
+    if (route.settings.name == _delegate._current.name) {
+      _delegate._doDispose();
+    }
+  }
+
+  @override
+  void didRemove(
+    final Route<dynamic> route,
+    final Route<dynamic>? previousRoute,
+  ) {
+    if (_delegate._currentObserverCallback == null) {
+      return;
+    }
+
+    if (route.settings.name == _delegate._current.name) {
+      _delegate._doDispose();
+    }
+  }
+
+  @override
+  void didReplace({
+    final Route<dynamic>? newRoute,
+    final Route<dynamic>? oldRoute,
+  }) {
+    if (_delegate._currentObserverCallback == null) {
+      return;
+    }
+
+    if (oldRoute?.settings.name == _delegate._current.name) {
+      _delegate._doDispose();
     }
   }
 }

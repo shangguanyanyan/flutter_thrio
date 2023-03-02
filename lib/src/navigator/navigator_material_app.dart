@@ -21,17 +21,19 @@
 
 import 'package:flutter/material.dart';
 
+import '../module/module_anchor.dart';
+import '../module/thrio_module.dart';
 import 'navigator_home.dart';
 import 'thrio_navigator_implement.dart';
 
 class NavigatorMaterialApp extends MaterialApp {
   NavigatorMaterialApp({
-    super.key,
     super.navigatorKey,
-    final List<NavigatorObserver> navigatorObservers = const <NavigatorObserver>[],
+    final List<NavigatorObserver> navigatorObservers =
+        const <NavigatorObserver>[],
     final TransitionBuilder? builder,
     super.title,
-    final Widget? home,
+    super.home,
     super.onGenerateTitle,
     super.color,
     super.theme,
@@ -52,16 +54,23 @@ class NavigatorMaterialApp extends MaterialApp {
     super.actions,
     super.restorationScopeId,
   }) : super(
+          key: appKey,
           builder: (final context, final child) {
             if (builder != null) {
-              return builder(context, ThrioNavigatorImplement.shared().builder(context, child));
+              return builder(context,
+                  ThrioNavigatorImplement.shared().builder(context, child));
             } else {
               return ThrioNavigatorImplement.shared().builder(context, child);
             }
           },
           navigatorObservers: [...navigatorObservers],
-          home: home,
           initialRoute: '1 /',
           routes: {'1 /': (final _) => home ?? const NavigatorHome()},
         );
+
+  static final appKey = GlobalKey(debugLabel: 'app');
+
+  /// Get moduleContext of root module.
+  ///
+  ModuleContext get moduleContext => anchor.rootModuleContext;
 }

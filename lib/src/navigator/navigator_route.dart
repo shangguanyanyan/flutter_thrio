@@ -25,12 +25,12 @@ import 'navigator_route_settings.dart';
 import 'navigator_types.dart';
 import 'thrio_navigator_implement.dart';
 
-enum NavigatorRouteAction { push, pop, popTo, remove, replace }
+enum NavigatorRouteType { push, pop, popTo, remove, replace }
 
 /// A route managed by the `ThrioNavigatorImplement`.
 ///
 mixin NavigatorRoute on PageRoute<bool> {
-  NavigatorRouteAction? routeAction;
+  NavigatorRouteType? routeType;
 
   @override
   RouteSettings get settings;
@@ -43,15 +43,19 @@ mixin NavigatorRoute on PageRoute<bool> {
 
   @protected
   void setPopDisabled({final bool disabled = false}) {
+    if (_popDisableds[settings.name!] == disabled) {
+      return;
+    }
     _popDisableds[settings.name!] = disabled;
 
     // 延迟300ms执行，避免因为WillPopScope依赖变更导致发送过多的Channel消息
-    _popDisabledFutures[settings.name!] ??= Future.delayed(const Duration(milliseconds: 300), () {
+    _popDisabledFutures[settings.name!] ??=
+        Future.delayed(const Duration(milliseconds: 300), () {
       _popDisabledFutures.remove(settings.name); // ignore: unawaited_futures
       final disabled = _popDisableds.remove(settings.name);
       if (disabled != null) {
         ThrioNavigatorImplement.shared().setPopDisabled(
-          url: settings.url!,
+          url: settings.url,
           index: settings.index,
           disabled: disabled,
         );

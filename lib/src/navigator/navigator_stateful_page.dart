@@ -28,20 +28,12 @@ abstract class NavigatorStatefulPage extends StatefulWidget with NavigatorPage {
   const NavigatorStatefulPage({
     super.key,
     required this.moduleContext,
-    this.params,
-    this.url,
-    this.index = 0,
+    required this.settings,
   });
 
   @override
   final ModuleContext moduleContext;
 
   @override
-  final dynamic params;
-
-  @override
-  final String? url;
-
-  @override
-  final int index;
+  final RouteSettings settings;
 }

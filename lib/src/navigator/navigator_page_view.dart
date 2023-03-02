@@ -22,16 +22,13 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-import '../extension/thrio_build_context.dart';
-import '../module/module_anchor.dart';
+import '../module/thrio_module.dart';
 import 'navigator_page_observer.dart';
-import 'navigator_route.dart';
 import 'navigator_route_settings.dart';
-import 'navigator_widget.dart';
-import 'thrio_navigator.dart';
+import 'thrio_navigator_implement.dart';
 
 class NavigatorPageView extends StatefulWidget {
-  const NavigatorPageView({
+  NavigatorPageView({
     super.key,
     this.scrollDirection = Axis.horizontal,
     this.reverse = false,
@@ -39,8 +36,9 @@ class NavigatorPageView extends StatefulWidget {
     this.physics,
     this.pageSnapping = true,
     this.onPageChanged,
-    this.parentUrl,
     this.routeSettings = const <RouteSettings>[],
+    this.keepIndex = false,
+    this.childBuilder,
     this.dragStartBehavior = DragStartBehavior.start,
     this.allowImplicitScrolling = false,
     this.restorationId,
@@ -55,15 +53,23 @@ class NavigatorPageView extends StatefulWidget {
 
   final PageController? controller;
 
+  late final PageController _realController = controller ?? PageController();
+
   final ScrollPhysics? physics;
 
   final bool pageSnapping;
 
-  final void Function(RouteSettings)? onPageChanged;
+  final void Function(int, RouteSettings)? onPageChanged;
 
   final List<RouteSettings> routeSettings;
 
-  final String? parentUrl;
+  final bool keepIndex;
+
+  final Widget Function(
+    BuildContext context,
+    RouteSettings settings,
+    Widget child,
+  )? childBuilder;
 
   final DragStartBehavior dragStartBehavior;
 
@@ -81,103 +87,109 @@ class NavigatorPageView extends StatefulWidget {
   State<NavigatorPageView> createState() => _NavigatorPageViewState();
 }
 
-// ignore: prefer_mixin
-class _NavigatorPageViewState extends State<NavigatorPageView> with WidgetsBindingObserver {
-  VoidCallback? _pageObserverCallback;
+class _NavigatorPageViewState extends State<NavigatorPageView> {
+  final _nameSettings = <String, RouteSettings>{};
 
-  late final controller = widget.controller ?? PageController();
+  List<String> _currentNames = <String>[];
 
-  bool isAppeared = true;
+  List<RouteSettings> get routeSettings =>
+      _currentNames.map((final it) => _nameSettings[it]!).toList();
 
-  late RouteSettings current = widget.routeSettings[controller.initialPage];
+  late RouteSettings current =
+      routeSettings[widget._realController.initialPage];
 
-  Future<void>? appearFuture;
-
-  Future<void>? disappearFuture;
-
-  void onPageChanged(final int idx) {
-    final routeSettings = widget.routeSettings[idx];
-    if (routeSettings != current) {
-      final oldRouteSettings = current;
-      current = routeSettings;
-      widget.onPageChanged?.call(routeSettings);
-      _changedToAppear(routeSettings);
-      _changedToDisappear(oldRouteSettings);
-    }
-  }
-
-  void _changedToAppear(final RouteSettings routeSettings) {
-    if (isAppeared) {
-      appearFuture ??= Future.delayed(const Duration(milliseconds: 10), () {
-        final obs = anchor.pageLifecycleObservers[routeSettings.url!];
-        for (final ob in obs) {
-          if (ob is! _PageViewPageObserver) {
-            ob.didAppear(routeSettings);
-          }
-        }
-        appearFuture = null;
-      });
-    }
-  }
-
-  void _changedToDisappear(final RouteSettings routeSettings) {
-    if (isAppeared) {
-      disappearFuture ??= Future.delayed(const Duration(milliseconds: 10), () {
-        final obs = anchor.pageLifecycleObservers[routeSettings.url!];
-        for (final ob in obs) {
-          if (ob is! _PageViewPageObserver) {
-            ob.didDisappear(routeSettings);
-          }
-        }
-        disappearFuture = null;
-      });
-    }
-  }
+  late int currentIndex = widget._realController.initialPage;
 
   @override
   void initState() {
     super.initState();
     if (mounted) {
-      _changedToAppear(current);
+      if (widget.routeSettings.isEmpty) {
+        return;
+      }
+      _checkRouteSettings(widget.routeSettings);
+      _mapRouteSettings(widget.routeSettings);
+      _initSelectedState();
     }
   }
 
-  @override
-  void didChangeAppLifecycleState(final AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
-      isAppeared = true;
-      _changedToAppear(current);
-    } else if (state == AppLifecycleState.inactive) {
-      isAppeared = false;
-      _changedToDisappear(current);
+  void _checkRouteSettings(final List<RouteSettings> settings) {
+    final names = settings.map((final it) => it.name).toList();
+    final nameSet = names.toSet();
+    if (nameSet.length != names.length) {
+      nameSet.forEach(names.remove);
+      throw ArgumentError.value(
+        settings,
+        'duplicate RouteSettings',
+        names.join(','),
+      );
+    }
+  }
+
+  void _mapRouteSettings(final List<RouteSettings> settings) {
+    final newNames = settings.map<String>((final it) => it.name!).toList();
+    _currentNames = newNames;
+
+    for (final it in settings) {
+      if (!_nameSettings.containsKey(it.name)) {
+        final tem = NavigatorRouteSettings.settingsWith(
+          url: it.url,
+          index: widget.keepIndex ? it.index : null,
+          params: it.params,
+        );
+        _nameSettings[it.name!] = tem;
+      } else {
+        final old = _nameSettings[it.name!]!;
+        _nameSettings[it.name!] = NavigatorRouteSettings.settingsWith(
+          url: old.url,
+          index: old.index,
+          params: it.params,
+        );
+      }
+    }
+  }
+
+  void _initSelectedState() {
+    current.isSelected = true;
+    final sts = routeSettings;
+    for (final it in sts) {
+      if (it.name != current.name) {
+        it.isSelected = false;
+      }
     }
   }
 
   @override
   void dispose() {
-    _pageObserverCallback?.call();
+    if (widget.controller == null) {
+      widget._realController.dispose();
+    }
     super.dispose();
   }
 
   @override
-  void didChangeDependencies() {
-    if (_pageObserverCallback != null) {
-      _pageObserverCallback?.call();
-      _pageObserverCallback = null;
-    }
+  void didUpdateWidget(final NavigatorPageView oldWidget) {
+    super.didUpdateWidget(oldWidget);
 
-    final state = context.stateOf<NavigatorWidgetState>();
-    var parentUrl = widget.parentUrl;
-    final route = state.history.last;
-    if (route is NavigatorRoute) {
-      parentUrl = route.settings.url;
-    }
-    _pageObserverCallback = anchor.pageLifecycleObservers.registry(
-      parentUrl!,
-      _PageViewPageObserver(this),
-    );
+    if (widget.routeSettings.isNotEmpty) {
+      _checkRouteSettings(widget.routeSettings);
+      _mapRouteSettings(widget.routeSettings);
 
-    super.didChangeDependencies();
+      // 重置索引
+      currentIndex = widget._realController.initialPage;
+      if (widget._realController.positions.isNotEmpty) {
+        final idx = widget._realController.page?.round();
+        if (idx != null) {
+          currentIndex = idx;
+        }
+      }
+      current = routeSettings[currentIndex];
+
+      _initSelectedState();
+    }
+    if (oldWidget.controller == null) {
+      oldWidget._realController.dispose();
+    }
   }
 
   @override
@@ -185,7 +197,7 @@ class _NavigatorPageViewState extends State<NavigatorPageView> with WidgetsBindi
         key: widget.key,
         scrollDirection: widget.scrollDirection,
         reverse: widget.reverse,
-        controller: controller,
+        controller: widget._realController,
         physics: widget.physics,
         pageSnapping: widget.pageSnapping,
         onPageChanged: onPageChanged,
@@ -195,32 +207,54 @@ class _NavigatorPageViewState extends State<NavigatorPageView> with WidgetsBindi
         clipBehavior: widget.clipBehavior,
         scrollBehavior: widget.scrollBehavior,
         padEnds: widget.padEnds,
-        children: widget.routeSettings.map((final it) {
-          final w = ThrioNavigator.build(url: it.url!, params: it.params);
+        children: routeSettings.map((final it) {
+          var w = ThrioNavigatorImplement.shared().buildWithSettings(
+            settings: it,
+          );
           if (w == null) {
-            throw ArgumentError.value(it, 'routeSettings', 'invalid routeSettings');
+            throw ArgumentError.value(
+              it,
+              'routeSettings',
+              'invalid routeSettings',
+            );
+          }
+          if (widget.childBuilder != null) {
+            w = widget.childBuilder!(context, it, w);
           }
           return w;
         }).toList(),
       );
-}
 
-class _PageViewPageObserver with NavigatorPageObserver {
-  const _PageViewPageObserver(this.lifecycleState);
+  void onPageChanged(final int idx) {
+    currentIndex = idx;
 
-  final _NavigatorPageViewState lifecycleState;
-
-  @override
-  void didAppear(final RouteSettings routeSettings) {
-    lifecycleState
-      ..isAppeared = true
-      .._changedToAppear(lifecycleState.current);
+    final sts = routeSettings[currentIndex];
+    if (sts.name != current.name) {
+      final oldRouteSettings = current;
+      current = sts;
+      widget.onPageChanged?.call(currentIndex, sts);
+      _changedToDisappear(oldRouteSettings);
+      oldRouteSettings.isSelected = false;
+      current.isSelected = true;
+      _changedToAppear(current);
+    }
   }
 
-  @override
-  void didDisappear(final RouteSettings routeSettings) {
-    lifecycleState
-      .._changedToDisappear(lifecycleState.current)
-      ..isAppeared = false;
+  void _changedToAppear(final RouteSettings routeSettings) {
+    final obs = ThrioModule.gets<NavigatorPageObserver>(url: routeSettings.url);
+    for (final ob in obs) {
+      if (ob.settings == null || ob.settings?.name == routeSettings.name) {
+        ob.didAppear(routeSettings);
+      }
+    }
+  }
+
+  void _changedToDisappear(final RouteSettings routeSettings) {
+    final obs = ThrioModule.gets<NavigatorPageObserver>(url: routeSettings.url);
+    for (final ob in obs) {
+      if (ob.settings == null || ob.settings?.name == routeSettings.name) {
+        ob.didDisappear(routeSettings);
+      }
+    }
   }
 }

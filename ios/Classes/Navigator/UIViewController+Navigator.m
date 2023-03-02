@@ -64,6 +64,17 @@ NS_ASSUME_NONNULL_BEGIN
     return next;
 }
 
+- (NavigatorRouteType)thrio_routeType {
+    return [(NSNumber *)objc_getAssociatedObject(self, @selector(setThrio_routeType:)) integerValue];
+}
+
+- (void)setThrio_routeType:(NavigatorRouteType)routeType {
+    objc_setAssociatedObject(self,
+                             @selector(setThrio_routeType:),
+                             @(routeType),
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+}
+
 #pragma mark - Navigation methods
 
 - (void)thrio_pushUrl:(NSString *)url
@@ -74,6 +85,13 @@ NS_ASSUME_NONNULL_BEGIN
            fromPageId:(NSUInteger)fromPageId
                result:(ThrioNumberCallback _Nullable)result
          poppedResult:(ThrioIdCallback _Nullable)poppedResult {
+    if (self.thrio_routeType != NavigatorRouteTypeNone) {
+        if (result) {
+            result(@0);
+        }
+    }
+    self.thrio_routeType = NavigatorRouteTypePushing;
+    
     NavigatorRouteSettings *settings = [NavigatorRouteSettings settingsWithUrl:url
                                                                          index:index
                                                                         nested:self.thrio_firstRoute != nil
@@ -106,8 +124,9 @@ NS_ASSUME_NONNULL_BEGIN
                 ThrioModule.pageObservers.lastRoute = newRoute;
             }
             if (result) {
-                result(r ? index : nil);
+                result(r ? index : @0);
             }
+            strongSelf.thrio_routeType = NavigatorRouteTypeNone;
         }];
     } else {
         if (self.thrio_firstRoute) {
@@ -122,6 +141,7 @@ NS_ASSUME_NONNULL_BEGIN
         if (result) {
             result(index);
         }
+        self.thrio_routeType = NavigatorRouteTypeNone;
     }
 }
 
@@ -185,7 +205,7 @@ NS_ASSUME_NONNULL_BEGIN
                  inRoot:(BOOL)inRoot
                  result:(ThrioBoolCallback _Nullable)result {
     NavigatorPageRoute *route = self.thrio_lastRoute;
-    if (!route) {
+    if (!route || self.thrio_routeType != NavigatorRouteTypeNone) {
         if (result) {
             result(NO);
         }
@@ -197,8 +217,8 @@ NS_ASSUME_NONNULL_BEGIN
                                                    toArgumentsWithParams:serializeParams]];
     [arguments setObject:[NSNumber numberWithBool:animated] forKey:@"animated"];
     [arguments setObject:[NSNumber numberWithBool:inRoot] forKey:@"inRoot"];
-    
     if ([self isKindOfClass:NavigatorFlutterViewController.class]) {
+        self.thrio_routeType = NavigatorRouteTypePopping;
         NSString *entrypoint = [(NavigatorFlutterViewController *)self entrypoint];
         NSUInteger pageId = [(NavigatorFlutterViewController *)self pageId];
         NavigatorRouteSendChannel *channel = [NavigatorFlutterEngineFactory.shared getSendChannelByPageId:pageId
@@ -215,6 +235,7 @@ NS_ASSUME_NONNULL_BEGIN
                     [strongSelf.navigationController popViewControllerAnimated:animated];
                 }
             }
+            strongSelf.thrio_routeType = NavigatorRouteTypeNone;
             if (result) {
                 result(r);
             }
@@ -470,7 +491,7 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (NavigatorPageRoute *_Nullable)thrio_getRouteByUrl:(NSString *)url
-                                               index:(NSNumber *_Nullable)index {
+                                               index:(NSNumber *)index {
     NavigatorPageRoute *last = self.thrio_lastRoute;
     if (url.length < 1) {
         return last;
@@ -485,8 +506,16 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (NavigatorPageRoute *_Nullable)thrio_getLastRouteByUrl:(NSString *)url {
-    NavigatorPageRoute *route = [self thrio_getRouteByUrl:url index:nil];
-    return route;
+    NavigatorPageRoute *last = self.thrio_lastRoute;
+    if (url.length < 1) {
+        return last;
+    }
+    do {
+        if ([last.settings.url isEqualToString:url]) {
+            return last;
+        }
+    } while ((last = last.prev));
+    return nil;
 }
 
 - (NSArray *)thrio_getAllRoutesByUrl:(NSString *_Nullable)url {
@@ -504,14 +533,17 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - method swizzling
 
 + (void)load {
-    [self instanceSwizzle:@selector(viewWillAppear:)
-              newSelector:@selector(thrio_viewWillAppear:)];
-    [self instanceSwizzle:@selector(viewDidAppear:)
-              newSelector:@selector(thrio_viewDidAppear:)];
-    [self instanceSwizzle:@selector(viewWillDisappear:)
-              newSelector:@selector(thrio_viewWillDisappear:)];
-    [self instanceSwizzle:@selector(viewDidDisappear:)
-              newSelector:@selector(thrio_viewDidDisappear:)];
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        [self instanceSwizzle:@selector(viewWillAppear:)
+                  newSelector:@selector(thrio_viewWillAppear:)];
+        [self instanceSwizzle:@selector(viewDidAppear:)
+                  newSelector:@selector(thrio_viewDidAppear:)];
+        [self instanceSwizzle:@selector(viewWillDisappear:)
+                  newSelector:@selector(thrio_viewWillDisappear:)];
+        [self instanceSwizzle:@selector(viewDidDisappear:)
+                  newSelector:@selector(thrio_viewDidDisappear:)];
+    });
 }
 
 - (void)thrio_viewWillAppear:(BOOL)animated {

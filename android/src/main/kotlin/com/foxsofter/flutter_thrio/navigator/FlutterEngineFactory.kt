@@ -23,10 +23,8 @@
 
 package com.foxsofter.flutter_thrio.navigator
 
-import android.content.Context
+import android.app.Activity
 import com.foxsofter.flutter_thrio.extension.getEntrypoint
-import com.foxsofter.flutter_thrio.extension.getPageId
-import io.flutter.embedding.android.ThrioFlutterActivity
 
 object FlutterEngineFactory : PageObserver, RouteObserver {
 
@@ -34,32 +32,27 @@ object FlutterEngineFactory : PageObserver, RouteObserver {
 
     internal var isMultiEngineEnabled = false
 
-    fun startup(
-        context: Context,
-        entrypoint: String = NAVIGATION_FLUTTER_ENTRYPOINT_DEFAULT,
-        readyListener: FlutterEngineReadyListener? = null
-    ) {
+    private fun ensureEngineGroup(entrypoint: String): FlutterEngineGroup {
         val ep = getEntrypoint(entrypoint)
         var engineGroup = engineGroups[ep]
         if (engineGroup == null) {
             engineGroup = FlutterEngineGroup(ep)
             engineGroups[ep] = engineGroup
         }
-        engineGroup.startup(context, readyListener)
+        return engineGroup
     }
 
-    // 仅用于让 ThrioFlutterActivity 调用
-    fun provideEngine(activity: ThrioFlutterActivity): io.flutter.embedding.engine.FlutterEngine {
+    // 仅用于让 ThrioFlutterActivity 或 ThrioFlutterFragmentActivity 调用
+    fun provideEngine(activity: Activity): io.flutter.embedding.engine.FlutterEngine {
         val entrypoint = getEntrypoint(activity.intent.getEntrypoint())
-        return engineGroups[entrypoint]?.provideEngine(activity)
-            ?: throw RuntimeException("FlutterEngine not exists")
+        val engineGroup = ensureEngineGroup(entrypoint)
+        return engineGroup.provideEngine(activity)
     }
 
-    // 仅用于让 ThrioFlutterActivity 调用
-    fun cleanUpFlutterEngine(activity: ThrioFlutterActivity) {
+    // 仅用于让 ThrioFlutterActivity 或 ThrioFlutterFragmentActivity 调用
+    fun cleanUpFlutterEngine(activity: Activity) {
         val entrypoint = getEntrypoint(activity.intent.getEntrypoint())
-        val pageId = activity.intent.getPageId()
-        engineGroups[entrypoint]?.cleanUpFlutterEngine(pageId)
+        engineGroups[entrypoint]?.cleanUpFlutterEngine(activity)
     }
 
     // 获取 FlutterEngine 的实例

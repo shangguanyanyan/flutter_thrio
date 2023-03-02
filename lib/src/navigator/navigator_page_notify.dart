@@ -23,14 +23,12 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
-import '../extension/thrio_build_context.dart';
 import '../module/module_anchor.dart';
 import '../module/module_types.dart';
 import '../module/thrio_module.dart';
-import 'navigator_route.dart';
+import 'navigator_page.dart';
 import 'navigator_route_settings.dart';
 import 'navigator_types.dart';
-import 'navigator_widget.dart';
 import 'thrio_navigator_implement.dart';
 
 class NavigatorPageNotify extends StatefulWidget {
@@ -55,6 +53,8 @@ class NavigatorPageNotify extends StatefulWidget {
 }
 
 class _NavigatorPageNotifyState extends State<NavigatorPageNotify> {
+  RouteSettings? _settings;
+
   StreamSubscription<dynamic>? _notifySubscription;
 
   @override
@@ -69,16 +69,38 @@ class _NavigatorPageNotifyState extends State<NavigatorPageNotify> {
 
   @override
   void didChangeDependencies() {
-    _notifySubscription?.cancel();
-    final state = context.stateOf<NavigatorWidgetState>();
-    final route = state.history.last;
-    if (route is NavigatorRoute) {
+    final settings = NavigatorPage.routeSettingsOf(context);
+    if (settings.name != _settings?.name) {
+      _settings = settings;
+      _notifySubscription?.cancel();
       _notifySubscription = ThrioNavigatorImplement.shared()
-          .onPageNotify(url: route.settings.url!, index: route.settings.index, name: widget.name)
+          .onPageNotify(
+            url: _settings!.url,
+            index: _settings!.index,
+            name: widget.name,
+          )
           .listen(_listen);
     }
-
     super.didChangeDependencies();
+  }
+
+  @override
+  void didUpdateWidget(covariant final NavigatorPageNotify oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.initialParams != null &&
+        widget.initialParams != oldWidget.initialParams) {
+      widget.onPageNotify(widget.initialParams);
+    }
+    if (widget.name != oldWidget.name) {
+      _notifySubscription?.cancel();
+      _notifySubscription = ThrioNavigatorImplement.shared()
+          .onPageNotify(
+            url: _settings!.url,
+            index: _settings!.index,
+            name: widget.name,
+          )
+          .listen(_listen);
+    }
   }
 
   void _listen(final dynamic params) {
@@ -86,16 +108,17 @@ class _NavigatorPageNotifyState extends State<NavigatorPageNotify> {
       if (params is Map) {
         if (params.containsKey('__thrio_Params_HashCode__')) {
           // ignore: avoid_as
-          final paramsObjs =
-              anchor.removeParam<dynamic>(params['__thrio_Params_HashCode__'] as int);
+          final paramsObjs = anchor
+              .removeParam<dynamic>(params['__thrio_Params_HashCode__'] as int);
           widget.onPageNotify(paramsObjs);
           return;
         }
         if (params.containsKey('__thrio_TParams__')) {
           // ignore: avoid_as
           final typeString = params['__thrio_TParams__'] as String;
-          final paramsObj = ThrioModule.get<JsonDeserializer<dynamic>>(key: typeString)
-              ?.call(params.cast<String, dynamic>());
+          final paramsObj =
+              ThrioModule.get<JsonDeserializer<dynamic>>(key: typeString)
+                  ?.call(params.cast<String, dynamic>());
           if (paramsObj != null) {
             widget.onPageNotify(paramsObj);
             return;

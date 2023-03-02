@@ -21,6 +21,7 @@
 
 library flutter_thrio;
 
+export 'src/async/async_task_queue.dart';
 export 'src/channel/thrio_channel.dart';
 export 'src/extension/thrio_build_context.dart';
 export 'src/extension/thrio_dynamic.dart';
@@ -32,6 +33,7 @@ export 'src/module/module_json_serializer.dart';
 export 'src/module/module_page_builder.dart';
 export 'src/module/module_page_observer.dart';
 export 'src/module/module_param_scheme.dart';
+export 'src/module/module_route_action.dart';
 export 'src/module/module_route_builder.dart';
 export 'src/module/module_route_custom_handler.dart';
 export 'src/module/module_route_observer.dart';
@@ -55,10 +57,11 @@ export 'src/navigator/navigator_route_observer.dart';
 export 'src/navigator/navigator_route_push.dart';
 export 'src/navigator/navigator_route_settings.dart';
 export 'src/navigator/navigator_stateful_page.dart';
-export 'src/navigator/navigator_stateful_page.dart';
 export 'src/navigator/navigator_stateless_page.dart';
 export 'src/navigator/navigator_tab_bar_view.dart';
 export 'src/navigator/navigator_types.dart';
+export 'src/navigator/navigator_will_pop.dart';
+export 'src/navigator/navigator_will_pop_mixin.dart';
 export 'src/navigator/thrio_navigator.dart';
 export 'src/registry/registry_map.dart';
 export 'src/registry/registry_set.dart';

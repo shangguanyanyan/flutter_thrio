@@ -209,7 +209,16 @@ extension ThrioObject on Object {
   /// Can be called in the following ways,
   /// `2.isSimpleType`
   ///
-  bool get isSimpleType => isPrimitiveType || isSimpleList || isSimpleMap || isSimpleSet;
+  bool get isSimpleType =>
+      isPrimitiveType || isSimpleList || isSimpleMap || isSimpleSet;
+
+  /// Determine whether the current instance is a transferable type,
+  /// including bool, int, double, String, Map, List.
+  ///
+  /// Can be called in the following ways,
+  /// `2.isTransferableType`
+  ///
+  bool get isTransferableType => isPrimitiveType || isSimpleList || isSimpleMap;
 
   /// Determine whether the current instance is a complex type,
   /// not bool, int, double, String, Map, List, Set.

@@ -410,6 +410,11 @@ NS_ASSUME_NONNULL_BEGIN
     return self.topViewController.thrio_lastRoute;
 }
 
+- (NavigatorPageRoute *_Nullable)thrio_getRouteByUrl:(NSString *)url index:(NSNumber *)index {
+    UIViewController *vc = [self getViewControllerByUrl:url index:index];
+    return [vc thrio_getRouteByUrl:url index:index];
+}
+
 - (NavigatorPageRoute *_Nullable)thrio_getLastRouteByUrl:(NSString *)url {
     UIViewController *vc = [self getViewControllerByUrl:url index:nil];
     return [vc thrio_getLastRouteByUrl:url];
@@ -466,18 +471,21 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark - method swizzling
 
 + (void)load {
-    [self instanceSwizzle:@selector(pushViewController:animated:)
-              newSelector:@selector(thrio_pushViewController:animated:)];
-    [self instanceSwizzle:@selector(popViewControllerAnimated:)
-              newSelector:@selector(thrio_popViewControllerAnimated:)];
-    [self instanceSwizzle:@selector(popToViewController:animated:)
-              newSelector:@selector(thrio_popToViewController:animated:)];
-    [self instanceSwizzle:@selector(setViewControllers:)
-              newSelector:@selector(thrio_setViewControllers:)];
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        [self instanceSwizzle:@selector(pushViewController:animated:)
+                  newSelector:@selector(thrio_pushViewController:animated:)];
+        [self instanceSwizzle:@selector(popViewControllerAnimated:)
+                  newSelector:@selector(thrio_popViewControllerAnimated:)];
+        [self instanceSwizzle:@selector(popToViewController:animated:)
+                  newSelector:@selector(thrio_popToViewController:animated:)];
+        [self instanceSwizzle:@selector(setViewControllers:)
+                  newSelector:@selector(thrio_setViewControllers:)];
+    });
 }
 
 - (void)thrio_pushViewController:(UIViewController *)viewController animated:(BOOL)animated {
-    if (!self.topViewController || ![viewController.thrio_hidesNavigationBar_ isEqualToNumber:self.topViewController.thrio_hidesNavigationBar_]) {
+    if (!self.topViewController || !self.topViewController.thrio_hidesNavigationBar_ || ![viewController.thrio_hidesNavigationBar_ isEqualToNumber:self.topViewController.thrio_hidesNavigationBar_]) {
         [self setNavigationBarHidden:viewController.thrio_hidesNavigationBar_.boolValue];
     }
     
@@ -620,6 +628,9 @@ NS_ASSUME_NONNULL_BEGIN
     if (viewControllers.count > 0) {
         UIViewController *willPopVC = self.topViewController;
         UIViewController *willShowVC = viewControllers.lastObject;
+        if (!willShowVC.thrio_hidesNavigationBar_) {
+            willShowVC.thrio_hidesNavigationBar_ = @YES;
+        }
         if (![willPopVC.thrio_hidesNavigationBar_ isEqualToNumber:willShowVC.thrio_hidesNavigationBar_]) {
             [self setNavigationBarHidden:willShowVC.thrio_hidesNavigationBar_.boolValue];
         }

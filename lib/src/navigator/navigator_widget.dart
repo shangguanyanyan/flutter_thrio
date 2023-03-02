@@ -63,22 +63,27 @@ class NavigatorWidgetState extends State<NavigatorWidget> {
   List<Route<dynamic>> get history => widget._observerManager.pageRoutes;
 
   /// 还无法实现animated=false
-  Future<bool> push(final RouteSettings settings, {final bool animated = true}) async {
+  Future<bool> push(
+    final RouteSettings settings, {
+    final bool animated = true,
+  }) async {
     final navigatorState = widget.child.tryStateOf<NavigatorState>();
     if (navigatorState == null) {
       return false;
     }
 
-    final pageBuilder = ThrioModule.get<NavigatorPageBuilder>(url: settings.url);
+    final pageBuilder =
+        ThrioModule.get<NavigatorPageBuilder>(url: settings.url);
     if (pageBuilder == null) {
       return false;
     }
 
     // 加载模块
-    await anchor.loading(settings.url!);
+    // await anchor.loading(settings.url);
 
     NavigatorRoute route;
-    final routeBuilder = ThrioModule.get<NavigatorRouteBuilder>(url: settings.url);
+    final routeBuilder =
+        ThrioModule.get<NavigatorRouteBuilder>(url: settings.url);
     if (routeBuilder == null) {
       route = NavigatorPageRoute(pageBuilder: pageBuilder, settings: settings);
     } else {
@@ -87,7 +92,7 @@ class NavigatorWidgetState extends State<NavigatorWidget> {
 
     ThrioNavigatorImplement.shared()
         .pageChannel
-        .willAppear(route.settings, NavigatorRouteAction.push);
+        .willAppear(route.settings, NavigatorRouteType.push);
 
     verbose(
       'push: url->${route.settings.url} '
@@ -104,12 +109,12 @@ class NavigatorWidgetState extends State<NavigatorWidget> {
     return true;
   }
 
-  Future<bool> canPop(final RouteSettings settings, {final bool inRoot = false}) async {
+  Future<bool> canPop(
+    final RouteSettings settings, {
+    final bool inRoot = false,
+  }) async {
     final navigatorState = widget.child.tryStateOf<NavigatorState>();
     if (navigatorState == null) {
-      return false;
-    }
-    if (await history.last.willPop() != RoutePopDisposition.pop) {
       return false;
     }
     // 在原生端处于容器的根部，且当前 Flutter 页面栈上不超过 3，则不能再 pop
@@ -140,14 +145,19 @@ class NavigatorWidgetState extends State<NavigatorWidget> {
     if (settings.name != history.last.settings.name) {
       return 0;
     }
-    // 在原生端处于容器的根部，且当前 Flutter 页面栈上不超过 3，则不能再 pop
-    if (inRoot && history.whereType<NavigatorRoute>().length < 3) {
+    // 在原生端处于容器的根部，且当前 Flutter 页面栈上不超过 2，则不能再 pop
+    if (inRoot && history.whereType<NavigatorRoute>().length < 2) {
       return 0;
     }
-    if (await history.last.willPop() != RoutePopDisposition.pop) {
-      return 0;
+    if (inRoot && history.whereType<NavigatorRoute>().length == 2) {
+      final notPop =
+          await history.last.willPop() == RoutePopDisposition.doNotPop;
+      if (notPop) {
+        return 0;
+      }
     }
-    return 1;
+    final notPop = await history.last.willPop() == RoutePopDisposition.doNotPop;
+    return notPop ? 0 : 1;
   }
 
   Future<bool> pop(
@@ -172,8 +182,14 @@ class NavigatorWidgetState extends State<NavigatorWidget> {
       if (poppedResults.containsKey(settings.name)) {
         // 不匹配的时候表示这里是非当前引擎触发的，调用 poppedResult 回调
         final poppedResult = poppedResults.remove(settings.name);
-        _poppedResultCallback(poppedResult, settings.url!, settings.params);
+        _poppedResultCallback(poppedResult, settings.url, settings.params);
       }
+      // 在原生端不处于容器的根部，或者当前 Flutter 页面栈上超过 2，则 pop
+      // 解决目前单引擎下偶现的无法 pop 的问题
+      if (!inRoot || history.whereType<NavigatorRoute>().length > 2) {
+        navigatorState.pop();
+      }
+
       // return false，避免原生端清栈，如果仅仅是为了触发 poppedResult 回调原生端也不会清栈
       return false;
     }
@@ -189,16 +205,12 @@ class NavigatorWidgetState extends State<NavigatorWidget> {
 
     // ignore: avoid_as
     final route = history.last as NavigatorRoute;
-    // The route has been closed.
-    if (route.routeAction == NavigatorRouteAction.pop) {
-      return false;
-    }
 
     ThrioNavigatorImplement.shared()
         .pageChannel
-        .willDisappear(route.settings, NavigatorRouteAction.pop);
+        .willDisappear(route.settings, NavigatorRouteType.pop);
 
-    route.routeAction = NavigatorRouteAction.pop;
+    route.routeType = NavigatorRouteType.pop;
     if (animated) {
       navigatorState.pop();
     } else {
@@ -206,18 +218,27 @@ class NavigatorWidgetState extends State<NavigatorWidget> {
     }
 
     return Future.value(true).then((final value) {
-      _poppedResultCallback(route.poppedResult, route.settings.url, settings.params);
+      _poppedResultCallback(
+        route.poppedResult,
+        route.settings.url,
+        settings.params,
+      );
+      route.poppedResult = null;
       return value;
     });
   }
 
-  Future<bool> popTo(final RouteSettings settings, {final bool animated = true}) async {
+  Future<bool> popTo(
+    final RouteSettings settings, {
+    final bool animated = true,
+  }) async {
     final navigatorState = widget.child.tryStateOf<NavigatorState>();
-    if (navigatorState == null || history.length < 2) {
+    if (navigatorState == null) {
       return false;
     }
 
-    final index = history.indexWhere((final it) => it.settings.name == settings.name);
+    final index =
+        history.indexWhere((final it) => it.settings.name == settings.name);
     if (index == -1) {
       return false;
     }
@@ -235,11 +256,11 @@ class NavigatorWidgetState extends State<NavigatorWidget> {
 
     ThrioNavigatorImplement.shared().pageChannel.willAppear(
           route.settings,
-          NavigatorRouteAction.popTo,
+          NavigatorRouteType.popTo,
         );
 
     // ignore: avoid_as
-    (route as NavigatorRoute).routeAction = NavigatorRouteAction.popTo;
+    (route as NavigatorRoute).routeType = NavigatorRouteType.popTo;
     if (animated) {
       navigatorState.popUntil((final it) => it.settings.name == settings.name);
     } else {
@@ -256,13 +277,22 @@ class NavigatorWidgetState extends State<NavigatorWidget> {
     return true;
   }
 
-  Future<bool> remove(final RouteSettings settings, {final bool animated = false}) async {
+  Future<bool> remove(
+    final RouteSettings settings, {
+    final bool animated = false,
+    final bool inRoot = false,
+  }) async {
     final navigatorState = widget.child.tryStateOf<NavigatorState>();
     if (navigatorState == null) {
       return false;
     }
-    final route = history.firstWhereOrNull((final it) => it.settings.name == settings.name);
+    final route = history
+        .firstWhereOrNull((final it) => it.settings.name == settings.name);
     if (route == null) {
+      return false;
+    }
+    // 在原生端处于容器的根部，且当前 Flutter 页面栈上不超过 3，则不能再 pop
+    if (inRoot && history.whereType<NavigatorRoute>().length < 3) {
       return false;
     }
 
@@ -272,13 +302,13 @@ class NavigatorWidgetState extends State<NavigatorWidget> {
     );
 
     // ignore: avoid_as
-    (route as NavigatorRoute).routeAction = NavigatorRouteAction.remove;
+    (route as NavigatorRoute).routeType = NavigatorRouteType.remove;
 
     if (settings.name == history.last.settings.name) {
       if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
         ThrioNavigatorImplement.shared()
             .pageChannel
-            .willDisappear(route.settings, NavigatorRouteAction.remove);
+            .willDisappear(route.settings, NavigatorRouteType.remove);
       }
       navigatorState.pop();
       return true;
@@ -288,29 +318,36 @@ class NavigatorWidgetState extends State<NavigatorWidget> {
     return true;
   }
 
-  Future<bool> replace(final RouteSettings settings, final RouteSettings newSettings) async {
+  Future<bool> replace(
+    final RouteSettings settings,
+    final RouteSettings newSettings,
+  ) async {
     final navigatorState = widget.child.tryStateOf<NavigatorState>();
     if (navigatorState == null) {
       return false;
     }
-    final route = history.lastWhereOrNull((final it) => it.settings.name == settings.name);
+    final route = history
+        .lastWhereOrNull((final it) => it.settings.name == settings.name);
     if (route == null) {
       return false;
     }
-    final pageBuilder = ThrioModule.get<NavigatorPageBuilder>(url: newSettings.url);
+    final pageBuilder =
+        ThrioModule.get<NavigatorPageBuilder>(url: newSettings.url);
     if (pageBuilder == null) {
       return false;
     }
 
     // 加载模块
-    await anchor.loading(newSettings.url!);
+    // await anchor.loading(newSettings.url);
 
     NavigatorRoute newRoute;
-    final routeBuilder = ThrioModule.get<NavigatorRouteBuilder>(url: settings.url);
+    final routeBuilder =
+        ThrioModule.get<NavigatorRouteBuilder>(url: newSettings.url);
     if (routeBuilder == null) {
-      newRoute = NavigatorPageRoute(pageBuilder: pageBuilder, settings: settings);
+      newRoute =
+          NavigatorPageRoute(pageBuilder: pageBuilder, settings: newSettings);
     } else {
-      newRoute = routeBuilder(pageBuilder, settings);
+      newRoute = routeBuilder(pageBuilder, newSettings);
     }
 
     verbose(
@@ -319,21 +356,22 @@ class NavigatorWidgetState extends State<NavigatorWidget> {
     );
 
     // ignore: avoid_as
-    (route as NavigatorRoute).routeAction = NavigatorRouteAction.replace;
+    (route as NavigatorRoute).routeType = NavigatorRouteType.replace;
 
     if (settings.name == history.last.settings.name) {
       if (WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed) {
         ThrioNavigatorImplement.shared()
             .pageChannel
-            .willDisappear(route.settings, NavigatorRouteAction.replace);
+            .willDisappear(route.settings, NavigatorRouteType.replace);
         ThrioNavigatorImplement.shared()
             .pageChannel
-            .willAppear(newRoute.settings, NavigatorRouteAction.replace);
+            .willAppear(newRoute.settings, NavigatorRouteType.replace);
       }
       navigatorState.replace(oldRoute: route, newRoute: newRoute);
     } else {
       final anchorRoute = history[history.indexOf(route) + 1];
-      navigatorState.replaceRouteBelow(anchorRoute: anchorRoute, newRoute: newRoute);
+      navigatorState.replaceRouteBelow(
+          anchorRoute: anchorRoute, newRoute: newRoute);
     }
 
     return true;
@@ -364,15 +402,16 @@ class NavigatorWidgetState extends State<NavigatorWidget> {
       if (params is Map) {
         if (params.containsKey('__thrio_Params_HashCode__')) {
           // ignore: avoid_as
-          final paramsObjs =
-              anchor.removeParam<dynamic>(params['__thrio_Params_HashCode__'] as int);
+          final paramsObjs = anchor
+              .removeParam<dynamic>(params['__thrio_Params_HashCode__'] as int);
           poppedResultCallback(paramsObjs);
           return;
         }
         if (params.containsKey('__thrio_TParams__')) {
           // ignore: avoid_as
           final typeString = params['__thrio_TParams__'] as String;
-          final paramsObjs = ThrioModule.get<JsonDeserializer<dynamic>>(url: url, key: typeString)
+          final paramsObjs = ThrioModule.get<JsonDeserializer<dynamic>>(
+                  url: url, key: typeString)
               ?.call(params.cast<String, dynamic>());
           poppedResultCallback(paramsObjs);
           return;
