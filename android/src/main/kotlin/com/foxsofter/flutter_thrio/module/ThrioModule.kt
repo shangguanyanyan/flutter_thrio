@@ -32,12 +32,17 @@ import com.foxsofter.flutter_thrio.navigator.Log
 import com.foxsofter.flutter_thrio.navigator.FlutterEngineReadyListener
 
 open class ThrioModule {
-var onReadyListener: FlutterEngineReadyListener? = null    
-companion object {
+    var onReadyListener: FlutterEngineReadyListener? = null
+
+    companion object {
         internal val root by lazy { ThrioModule() }
 
         @JvmStatic
-        fun init(module: ThrioModule, context: Application, onReadyListener: FlutterEngineReadyListener? = null) {
+        fun init(
+            module: ThrioModule,
+            context: Application,
+            onReadyListener: FlutterEngineReadyListener? = null
+        ) {
             context.registerActivityLifecycleCallbacks(ActivityDelegate)
             root.onReadyListener = onReadyListener
             root.moduleContext = ModuleContext()
@@ -95,9 +100,8 @@ companion object {
     protected open fun onModuleRegister(moduleContext: ModuleContext) {}
 
     protected open fun onModuleInit(moduleContext: ModuleContext) {}
-	
-	protected open fun onReadyCallback(engine: FlutterEngine) {}
 
+    protected open fun onReadyCallback(engine: FlutterEngine) {}
 
 
     protected var navigatorLogEnabled
@@ -120,6 +124,7 @@ companion object {
                 invokeMethod("set", canTransParams)
             }
         }
+        onReadyListener?.onReady(engine)
     }
 
 }

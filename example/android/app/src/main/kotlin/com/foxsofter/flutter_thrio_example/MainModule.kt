@@ -9,7 +9,7 @@ import io.flutter.embedding.android.ThrioFlutterFragmentActivity
 object MainModule : ThrioModule(), ModuleIntentBuilder, ModuleJsonSerializer,
     ModuleJsonDeserializer {
 
-    override fun onModuleInit(moduleContext: Mo  duleContext) {
+    override fun onModuleInit(moduleContext: ModuleContext) {
         navigatorLogEnabled = true
 
         val people = People(

@@ -77,6 +77,7 @@ class ThrioNavigatorImplement {
   }
 
   TransitionBuilder get builder => (final context, final child) {
+    print("${child.runtimeType}");
         if (child is Navigator) {
           final navigator = child;
           if (!navigator.observers.contains(observerManager)) {
@@ -89,6 +90,20 @@ class ThrioNavigatorImplement {
             child: navigator,
           );
         }
+
+        if (child is FocusScope && child.child is Navigator) {
+          final navigator = child.child as Navigator;
+          if (!navigator.observers.contains(observerManager)) {
+            navigator.observers.add(observerManager);
+          }
+          return NavigatorWidget(
+            key: _stateKey,
+            moduleContext: _moduleContext,
+            observerManager: observerManager,
+            child: navigator,
+          );
+        }
+
         return const SizedBox(
           width: 200,
           height: 100,
