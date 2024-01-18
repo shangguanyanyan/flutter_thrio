@@ -21,7 +21,6 @@
 
 import 'package:flutter/foundation.dart';
 
-import '../exception/thrio_exception.dart';
 import '../navigator/navigator_url_template.dart';
 import 'module_anchor.dart';
 import 'module_types.dart';
@@ -36,14 +35,11 @@ mixin ModuleRouteCustomHandler on ThrioModule {
   ///
   @protected
   VoidCallback registerRouteCustomHandler(
-    final String template,
-    final NavigatorRouteCustomHandler handler, {
-    final bool queryParamsDecoded = false,
+    String template,
+    NavigatorRouteCustomHandler handler, {
+    bool queryParamsDecoded = false,
   }) {
     final key = NavigatorUrlTemplate(template: template);
-    if (anchor.routeCustomHandlers.keys.contains(key)) {
-      throw ThrioException('duplicate url template: $template');
-    }
     handler.queryParamsDecoded = queryParamsDecoded;
     return anchor.routeCustomHandlers.registry(key, handler);
   }
@@ -51,5 +47,5 @@ mixin ModuleRouteCustomHandler on ThrioModule {
   /// A function for register a `NavigatorRouteCustomHandler` .
   ///
   @protected
-  void onRouteCustomHandlerRegister(final ModuleContext moduleContext) {}
+  void onRouteCustomHandlerRegister(ModuleContext moduleContext) {}
 }

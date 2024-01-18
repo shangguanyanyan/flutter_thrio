@@ -29,8 +29,7 @@ import 'navigator_types.dart';
 import 'thrio_navigator_implement.dart';
 
 class NavigatorRouteReceiveChannel {
-  NavigatorRouteReceiveChannel(final ThrioChannel channel)
-      : _channel = channel {
+  NavigatorRouteReceiveChannel(ThrioChannel channel) : _channel = channel {
     _onPush();
     _onMaybePop();
     _onPop();
@@ -55,10 +54,9 @@ class NavigatorRouteReceiveChannel {
         routeSettings.params =
             _deserializeParams(routeSettings.url, routeSettings.params);
         final animated = arguments?['animated'] == true;
-        final callback =
-            anchor.get<NavigatorRoutePushHandle>(url: routeSettings.url);
-        if (callback != null) {
-          final result = await callback(routeSettings, animated: animated);
+        final handlers = anchor.pushHandlers;
+        for (final handler in handlers) {
+          final result = await handler(routeSettings, animated: animated);
           if (result == NavigatorRoutePushHandleType.prevention) {
             return false;
           }
@@ -66,7 +64,7 @@ class NavigatorRouteReceiveChannel {
         return await ThrioNavigatorImplement.shared()
                 .navigatorState
                 ?.push(routeSettings, animated: animated)
-                .then((final value) {
+                .then((value) {
               ThrioNavigatorImplement.shared().syncPagePoppedResults();
               return value;
             }) ??
@@ -84,7 +82,7 @@ class NavigatorRouteReceiveChannel {
         return await ThrioNavigatorImplement.shared()
                 .navigatorState
                 ?.maybePop(routeSettings, animated: animated, inRoot: inRoot)
-                .then((final value) {
+                .then((value) {
               ThrioNavigatorImplement.shared().syncPagePoppedResults();
               return value;
             }) ??
@@ -104,7 +102,7 @@ class NavigatorRouteReceiveChannel {
         return await ThrioNavigatorImplement.shared()
                 .navigatorState
                 ?.pop(routeSettings, animated: animated, inRoot: inRoot)
-                .then((final value) {
+                .then((value) {
               ThrioNavigatorImplement.shared().syncPagePoppedResults();
               return value;
             }) ??
@@ -134,7 +132,7 @@ class NavigatorRouteReceiveChannel {
         return await ThrioNavigatorImplement.shared()
                 .navigatorState
                 ?.popTo(routeSettings, animated: animated)
-                .then((final value) {
+                .then((value) {
               ThrioNavigatorImplement.shared().syncPagePoppedResults();
               return value;
             }) ??
@@ -151,7 +149,7 @@ class NavigatorRouteReceiveChannel {
         return await ThrioNavigatorImplement.shared()
                 .navigatorState
                 ?.remove(routeSettings, animated: animated)
-                .then((final value) {
+                .then((value) {
               ThrioNavigatorImplement.shared().syncPagePoppedResults();
               return value;
             }) ??
@@ -172,7 +170,7 @@ class NavigatorRouteReceiveChannel {
         return await ThrioNavigatorImplement.shared()
                 .navigatorState
                 ?.replace(routeSettings, newRouteSettings)
-                .then((final value) {
+                .then((value) {
               ThrioNavigatorImplement.shared().syncPagePoppedResults();
               return value;
             }) ??
@@ -180,19 +178,19 @@ class NavigatorRouteReceiveChannel {
       });
 
   Stream<dynamic> onPageNotify({
-    required final String name,
-    final String? url,
-    final int index = 0,
+    required String name,
+    String? url,
+    int index = 0,
   }) =>
       _channel
           .onEventStream('__onNotify__')
-          .where((final arguments) =>
+          .where((arguments) =>
               arguments.containsValue(name) &&
               (url == null || url.isEmpty || arguments.containsValue(url)) &&
               (index == 0 || arguments.containsValue(index)))
-          .map((final arguments) => arguments['params']);
+          .map((arguments) => arguments['params']);
 
-  dynamic _deserializeParams(final String url, final dynamic params) {
+  dynamic _deserializeParams(String url, dynamic params) {
     if (params == null) {
       return null;
     }

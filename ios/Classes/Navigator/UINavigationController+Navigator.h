@@ -31,7 +31,6 @@ NS_ASSUME_NONNULL_BEGIN
                params:(id _Nullable)params
              animated:(BOOL)animated
        fromEntrypoint:(NSString *_Nullable)fromEntrypoint
-           fromPageId:(NSUInteger)fromPageId
                result:(ThrioNumberCallback _Nullable)result
          poppedResult:(ThrioIdCallback _Nullable)poppedResult;
 
@@ -47,6 +46,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)thrio_popParams:(id _Nullable)params
                animated:(BOOL)animated
                  result:(ThrioBoolCallback _Nullable)result;
+
+- (void)thrio_popFlutterParams:(id _Nullable)params
+                      animated:(BOOL)animated
+                        result:(ThrioBoolCallback _Nullable)result;
 
 - (void)thrio_popToUrl:(NSString *)url
                  index:(NSNumber *_Nullable)index

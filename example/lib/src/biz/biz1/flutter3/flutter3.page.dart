@@ -35,7 +35,7 @@ class _Flutter3PageState extends State<Flutter3Page>
   bool get wantKeepAlive => true;
 
   @override
-  Widget build(final BuildContext context) {
+  Widget build(BuildContext context) {
     super.build(context);
     return WillPopScope(
         onWillPop: () async {
@@ -68,7 +68,7 @@ class _Flutter3PageState extends State<Flutter3Page>
               ),
               InkWell(
                 onTap: () => biz.biz2.flutter4
-                    .push(people: People(age: 10, name: 'goodman', sex: '女')),
+                    .push(people: People(name: 'goodman', sex: '女')),
                 child: Container(
                     padding: const EdgeInsets.all(4),
                     margin: const EdgeInsets.all(4),
@@ -150,6 +150,17 @@ class _Flutter3PageState extends State<Flutter3Page>
                     )),
               ),
               InkWell(
+                onTap: ThrioNavigator.popFlutter,
+                child: Container(
+                    padding: const EdgeInsets.all(4),
+                    margin: const EdgeInsets.all(4),
+                    color: Colors.grey,
+                    child: const Text(
+                      'pop flutter',
+                      style: TextStyle(fontSize: 22, color: Colors.black),
+                    )),
+              ),
+              InkWell(
                 onTap: () async => biz.biz1.flutter1.flutter1(intValue: 9),
                 child: Container(
                     padding: const EdgeInsets.all(4),
@@ -164,7 +175,7 @@ class _Flutter3PageState extends State<Flutter3Page>
                 onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (final context) => const TestPage())),
+                        builder: (context) => const TestNavigatorPage())),
                 child: Container(
                     padding: const EdgeInsets.all(4),
                     margin: const EdgeInsets.all(4),
@@ -205,16 +216,6 @@ class _Flutter3PageState extends State<Flutter3Page>
           ),
         ));
   }
-
-  @override
-  void didAppear(final RouteSettings settings) {
-    ThrioLogger.d('flutter3 didAppear: $settings');
-  }
-
-  @override
-  void didDisappear(final RouteSettings settings) {
-    ThrioLogger.d('flutter3 didDisappear: $settings');
-  }
 }
 
 class TestPage extends StatefulWidget {
@@ -226,7 +227,7 @@ class TestPage extends StatefulWidget {
 
 class _TestPageState extends State<TestPage> {
   @override
-  Widget build(final BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(
           title: const Text('test page'),
           leading: const IconButton(
@@ -244,8 +245,8 @@ class _TestPageState extends State<TestPage> {
                 padding: const EdgeInsets.all(8.0),
                 child: TextFormField(
                   initialValue: '',
-                  onSaved: (final val) => val,
-                  validator: (final val) => val == '' ? val : null,
+                  onSaved: (val) => val,
+                  validator: (val) => val == '' ? val : null,
                 ),
               ),
               Padding(
@@ -270,6 +271,79 @@ class _TestPageState extends State<TestPage> {
                       foregroundColor:
                           MaterialStateProperty.all(Colors.indigo)),
                   onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                          settings: const RouteSettings(name: 'test'),
+                          builder: (context) => const TestPage()),
+                    );
+                  },
+                  child: const Text(
+                    'Navigator push',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ElevatedButton(
+                  style: ButtonStyle(
+                      foregroundColor:
+                          MaterialStateProperty.all(Colors.indigo)),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                          settings: const RouteSettings(name: 'test'),
+                          builder: (context) => const TestPage()),
+                    );
+                  },
+                  child: const Text(
+                    'Navigator push 2',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ElevatedButton(
+                  style: ButtonStyle(
+                      foregroundColor:
+                          MaterialStateProperty.all(Colors.indigo)),
+                  onPressed: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                          settings: const RouteSettings(name: 'test'),
+                          builder: (context) => const TestPage()),
+                    );
+                  },
+                  child: const Text(
+                    'Navigator pushReplace',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ElevatedButton(
+                  style: ButtonStyle(
+                      foregroundColor:
+                          MaterialStateProperty.all(Colors.indigo)),
+                  onPressed: () async {
+                    final mctx = await biz.biz1.flutter1.home.push();
+                    ThrioLogger.v(mctx.toString());
+                  },
+                  child: const Text(
+                    'push thrio page',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ElevatedButton(
+                  style: ButtonStyle(
+                      foregroundColor:
+                          MaterialStateProperty.all(Colors.indigo)),
+                  onPressed: () {
                     final mctx = NavigatorPage.moduleContextOf(context);
                     ThrioLogger.v(mctx.toString());
                   },
@@ -283,4 +357,66 @@ class _TestPageState extends State<TestPage> {
           ),
         ),
       );
+}
+
+class TestNavigatorPage extends StatefulWidget {
+  const TestNavigatorPage({super.key});
+
+  @override
+  _TestNavigatorPageState createState() => _TestNavigatorPageState();
+}
+
+class _TestNavigatorPageState extends State<TestNavigatorPage> {
+  final navigatorKey = GlobalKey<NavigatorState>();
+  BuildContext? internalContext;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+      appBar: AppBar(
+        title: const Text('test page'),
+        leading: const IconButton(
+          color: Colors.black,
+          tooltip: 'back',
+          icon: Icon(Icons.arrow_back_ios),
+          onPressed: ThrioNavigator.pop,
+        ),
+      ),
+      body: NavigatorWillPop(
+        internalNavigatorKey: navigatorKey,
+        onWillPop: () async {
+          final canPop = Navigator.of(internalContext!).canPop();
+          if (canPop) {
+            Navigator.of(internalContext!).pop();
+            return false;
+          }
+          return true;
+        },
+        child: Navigator(
+          observers: [
+            TestObser(),
+            NavigatorWillPop.navigatorObserverFor(navigatorKey)
+          ],
+          key: navigatorKey,
+          initialRoute: 'test',
+          onGenerateRoute: (settings) {
+            if (settings.name == 'test') {
+              return MaterialPageRoute(
+                  builder: (context) {
+                    internalContext = context;
+                    return const TestPage();
+                  },
+                  settings: settings);
+            }
+            return null;
+          },
+        ),
+      ));
+}
+
+class TestObser extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {}
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {}
 }

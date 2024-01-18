@@ -1,6 +1,8 @@
 // Copyright (c) 2022 foxsofter.
 //
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_thrio/flutter_thrio.dart';
@@ -34,17 +36,17 @@ class _Flutter4PageState extends State<Flutter4Page>
   bool get wantKeepAlive => true;
 
   @override
-  void didAppear(final RouteSettings routeSettings) {
-    ThrioLogger.d('flutter4 didAppear: $routeSettings');
+  void didAppear(RouteSettings routeSettings) {
+    super.didAppear(routeSettings);
   }
 
   @override
-  void didDisappear(final RouteSettings routeSettings) {
-    ThrioLogger.d('flutter4 didDisappear: $routeSettings');
+  void didDisappear(RouteSettings routeSettings) {
+    super.didDisappear(routeSettings);
   }
 
   @override
-  Widget build(final BuildContext context) {
+  Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
         appBar: AppBar(

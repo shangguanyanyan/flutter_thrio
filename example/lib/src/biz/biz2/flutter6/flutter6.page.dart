@@ -29,7 +29,7 @@ class _Flutter6PageState extends State<Flutter6Page> {
   }
 
   @override
-  Widget build(final BuildContext context) => Scaffold(
+  Widget build(BuildContext context) => Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
         title: const Text('thrio_deeplink_example',
@@ -66,6 +66,20 @@ class _Flutter6PageState extends State<Flutter6Page> {
                   color: Colors.yellow,
                   child: const Text(
                     'deeplink with one parameter',
+                    style: TextStyle(fontSize: 22, color: Colors.black),
+                  )),
+            ),
+            InkWell(
+              onTap: () async {
+                final result = await biz.biz1.flutter11.push();
+                debugPrint(result.toString());
+              },
+              child: Container(
+                  padding: const EdgeInsets.all(8),
+                  margin: const EdgeInsets.all(8),
+                  color: Colors.yellow,
+                  child: const Text(
+                    'push flutter11',
                     style: TextStyle(fontSize: 22, color: Colors.black),
                   )),
             ),

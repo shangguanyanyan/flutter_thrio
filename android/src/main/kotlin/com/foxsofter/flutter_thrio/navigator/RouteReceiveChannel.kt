@@ -36,6 +36,7 @@ internal class RouteReceiveChannel(
         onNotify()
         onMaybePop()
         onPop()
+        onPopFlutter()
         onPopTo()
         onRemove()
         onReplace()
@@ -43,7 +44,7 @@ internal class RouteReceiveChannel(
 
         onLastRoute()
         onGetAllRoutes()
-        isInitialRoute()
+        onIsInitialRoute()
 
         onSetPopDisabled()
         onHotRestart()
@@ -115,6 +116,20 @@ internal class RouteReceiveChannel(
             val params = arguments["params"]
             val animated = arguments["animated"] == true
             NavigationController.Pop.pop(params, animated){
+                result(it)
+            }
+        }
+    }
+
+    private fun onPopFlutter() {
+        channel.registryMethod("popFlutter") { arguments, result ->
+            if (arguments == null)  {
+                result(false)
+                return@registryMethod
+            }
+            val params = arguments["params"]
+            val animated = arguments["animated"] == true
+            NavigationController.Pop.popFlutter(params, animated){
                 result(it)
             }
         }
@@ -198,7 +213,7 @@ internal class RouteReceiveChannel(
         }
     }
 
-    private fun isInitialRoute() {
+    private fun onIsInitialRoute() {
         channel.registryMethod("isInitialRoute") { arguments, result ->
             if (arguments == null)  {
                 result(false)

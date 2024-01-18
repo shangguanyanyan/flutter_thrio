@@ -19,6 +19,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+// ignore_for_file: avoid_positional_boolean_parameters
+
 import 'package:flutter/widgets.dart';
 
 import 'navigator_route.dart';
@@ -62,3 +64,9 @@ typedef NavigatorRoutePushHandle = Future<NavigatorRoutePushHandleType>
   RouteSettings settings, {
   bool animated,
 });
+
+/// Signature of push begin handler with url.
+typedef NavigatorPushBeginHandle = Future<void> Function<TParams>(
+  String url,
+  TParams? params,
+);

@@ -1,6 +1,6 @@
 // The MIT License (MIT)
 //
-// Copyright (c) 2022 foxsofter
+// Copyright (c) 2023 foxsofter
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -19,30 +19,20 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-#import <Flutter/Flutter.h>
-#import "NavigatorFlutterEngine.h"
-#import "FlutterThrioTypes.h"
+import 'thrio_object.dart';
 
-NS_ASSUME_NONNULL_BEGIN
-
-
-@interface NavigatorFlutterEngineGroup : NSObject
-
-- (instancetype)initWithEntrypoint:(NSString *)entrypoint;
-- (instancetype)init NS_UNAVAILABLE;
-
-@property (nonatomic, copy, readonly) NSString *entrypoint;
-
-@property (nonatomic, copy, readonly) NSArray *engines;
-
-- (NavigatorFlutterEngine *)startupWithReadyBlock:(ThrioEngineReadyCallback _Nullable)block;
-
-- (BOOL)isMainEngineByPageId:(NSUInteger)pageId;
-
-- (NavigatorFlutterEngine *_Nullable)getEngineByPageId:(NSUInteger)pageId;
-
-- (void)destroyEngineByPageId:(NSUInteger)pageId;
-
-@end
-
-NS_ASSUME_NONNULL_END
+extension ThrioMap<K, V> on Map<K, V> {
+  /// Filter the key/value of the current map, keeping only simple types.
+  ///
+  Map<K, V> toSimpleMap() {
+    final map = <K, V>{};
+    final ts = this;
+    for (final k in ts.keys) {
+      final v = ts[k];
+      if (v?.isSimpleType == true) {
+        map[k] = v as V;
+      }
+    }
+    return map;
+  }
+}

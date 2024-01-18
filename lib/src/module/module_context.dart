@@ -38,7 +38,7 @@ class ModuleContext {
   ///
   /// If not exist, get from parent module's `ModuleContext`.
   ///
-  T? get<T>(final String key) {
+  T? get<T>(String key) {
     if (module is ModuleParamScheme) {
       final value = (module as ModuleParamScheme).getParam<T>(key);
       if (value != null) {
@@ -52,7 +52,7 @@ class ModuleContext {
   ///
   /// Return `false` if param scheme is not registered.
   ///
-  bool set<T>(final String key, final T value) {
+  bool set<T>(String key, T value) {
     if (module is ModuleParamScheme) {
       if ((module as ModuleParamScheme).setParam<T>(key, value)) {
         return true;
@@ -68,7 +68,7 @@ class ModuleContext {
   ///
   /// Return `value` if param not exists.
   ///
-  T? remove<T>(final String key) {
+  T? remove<T>(String key) {
     if (module is ModuleParamScheme) {
       final value = (module as ModuleParamScheme).removeParam<T>(key);
       if (value != null) {
@@ -76,27 +76,42 @@ class ModuleContext {
       }
     }
     // Anchor module caches the data of the framework
-    return module.parent == anchor || module.parent == null
+    return module.parent == anchor
         ? null
         : module.parent?._moduleContext.remove<T>(key);
   }
 
   /// Subscribe to a series of param by `key`.
   ///
-  Stream<T>? on<T>(final String key, {final T? initialValue}) {
+  /// sink `null` when `key` removed.
+  ///
+  Stream<T?>? onWithNull<T>(String key, {T? initialValue}) {
     if (module == anchor) {
-      return anchor.onParam(key, initialValue: initialValue);
+      return anchor.onParam<T>(key, initialValue: initialValue);
     }
 
     if (module is ModuleParamScheme) {
       final paramModule = module as ModuleParamScheme;
       if (paramModule.hasParamScheme<T>(key)) {
-        return paramModule.onParam(key, initialValue: initialValue);
+        return paramModule.onParam<T>(key, initialValue: initialValue);
       }
     }
 
-    return module.parent?._moduleContext.on(key, initialValue: initialValue);
+    return module.parent?._moduleContext
+        .onWithNull<T>(key, initialValue: initialValue);
   }
+
+  /// Subscribe to a series of param by `key`.
+  ///
+  Stream<T>? on<T>(String key, {T? initialValue}) =>
+      onWithNull<T>(key, initialValue: initialValue)
+          ?.transform<T>(StreamTransformer.fromHandlers(
+        handleData: (data, sink) {
+          if (data != null) {
+            sink.add(data);
+          }
+        },
+      ));
 
   @override
   String toString() => 'Context of module ${module.key}';

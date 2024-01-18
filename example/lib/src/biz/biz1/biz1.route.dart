@@ -6,13 +6,14 @@
 import 'package:flutter_thrio/flutter_thrio.dart';
 
 import 'flutter1/flutter1.route.dart';
+import 'flutter11/flutter11.route.dart';
 import 'flutter3/flutter3.route.dart';
 import 'flutter5/flutter5.route.dart';
 import 'flutter7/flutter7.route.dart';
 import 'flutter9/flutter9.route.dart';
 
 class Biz1Route extends NavigatorRouteNode {
-  factory Biz1Route(final NavigatorRouteNode parent) =>
+  factory Biz1Route(NavigatorRouteNode parent) =>
       _instance ??= Biz1Route._(parent);
 
   Biz1Route._(super.parent);
@@ -28,6 +29,8 @@ class Biz1Route extends NavigatorRouteNode {
   late final flutter7 = Flutter7Route(this);
 
   late final flutter9 = Flutter9Route(this);
+
+  late final flutter11 = Flutter11Route(this);
 
   @override
   String get name => 'biz1';

@@ -8,14 +8,14 @@ import 'package:flutter_thrio/flutter_thrio.dart';
 import 'biz1/biz1.route.dart';
 import 'biz2/biz2.route.dart';
 
-final biz = _Route();
+final biz = AppRoute();
 
-class _Route extends NavigatorRouteNode {
-  factory _Route() => _instance ??= _Route._();
+class AppRoute extends NavigatorRouteNode {
+  factory AppRoute() => _instance ??= AppRoute._();
 
-  _Route._() : super.home();
+  AppRoute._() : super.home();
 
-  static _Route? _instance;
+  static AppRoute? _instance;
 
   late final biz1 = Biz1Route(this);
 
@@ -29,9 +29,9 @@ class _Route extends NavigatorRouteNode {
   /// `userName` user name of login user.
   ///
   Future<bool> login({
-    final int? uid,
-    required final String userName,
-    final String userToken = 'good token',
+    int? uid,
+    required String userName,
+    String userToken = 'good token',
   }) =>
       ThrioNavigator.notify(
         url: url,

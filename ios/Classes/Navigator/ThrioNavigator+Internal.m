@@ -61,7 +61,6 @@ NS_ASSUME_NONNULL_BEGIN
           params:(id _Nullable)params
         animated:(BOOL)animated
   fromEntrypoint:fromEntrypoint
-      fromPageId:(NSUInteger)fromPageId
           result:(ThrioNumberCallback _Nullable)result
     poppedResult:(ThrioIdCallback _Nullable)poppedResult
 {
@@ -71,7 +70,6 @@ NS_ASSUME_NONNULL_BEGIN
                 params:params
               animated:animated
         fromEntrypoint:fromEntrypoint
-            fromPageId:fromPageId
                 result:^(NSNumber *idx) {
         if (result) {
             result(idx);
@@ -105,9 +103,17 @@ NS_ASSUME_NONNULL_BEGIN
                                         result:result];
 }
 
++ (void)_popFlutterParams:(id _Nullable)params
+                 animated:(BOOL)animated
+                   result:(ThrioBoolCallback _Nullable)result {
+    [self.navigationController thrio_popFlutterParams:params
+                                             animated:animated
+                                               result:result];
+}
+
 + (void)_maybePopParams:(id _Nullable)params
-          animated:(BOOL)animated
-            result:(ThrioBoolCallback _Nullable)result {
+               animated:(BOOL)animated
+                 result:(ThrioBoolCallback _Nullable)result {
     [self.navigationController thrio_maybePopParams:params
                                            animated:animated
                                              result:result];

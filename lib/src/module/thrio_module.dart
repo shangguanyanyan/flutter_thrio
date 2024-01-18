@@ -32,6 +32,7 @@ import 'module_anchor.dart';
 import 'module_expando.dart';
 import 'module_json_deserializer.dart';
 import 'module_json_serializer.dart';
+import 'module_jsonable.dart';
 import 'module_page_builder.dart';
 import 'module_page_observer.dart';
 import 'module_param_scheme.dart';
@@ -47,22 +48,26 @@ mixin ThrioModule {
   /// Modular initialization function, needs to be called once during App initialization.
   ///
   static Future<void> init(
-    final ThrioModule rootModule, {
-    final String? entrypoint,
+    ThrioModule rootModule, {
+    String? entrypoint,
+    void Function(String)? onModuleInitStart,
+    void Function(String)? onModuleInitEnd,
   }) async {
     if (anchor.modules.length == 1) {
       throw ThrioException('init method can only be called once.');
-    } else {
-      final moduleContext = entrypoint == null
-          ? ModuleContext()
-          : ModuleContext(entrypoint: entrypoint);
-      moduleOf[moduleContext] = anchor;
-      anchor
-        .._moduleContext = moduleContext
-        ..registerModule(rootModule, moduleContext);
-      await anchor.onModuleInit(moduleContext);
-      await anchor.initModule();
     }
+    ThrioModule._onModuleInitStart = onModuleInitStart;
+    ThrioModule._onModuleInitEnd = onModuleInitEnd;
+
+    final moduleContext = entrypoint == null
+        ? ModuleContext()
+        : ModuleContext(entrypoint: entrypoint);
+    moduleOf[moduleContext] = anchor;
+    anchor
+      .._moduleContext = moduleContext
+      ..registerModule(rootModule, moduleContext);
+    await anchor.onModuleInit(moduleContext);
+    await anchor.initModule();
   }
 
   /// Get instance by `T`, `url` and `key`.
@@ -80,12 +85,12 @@ mixin ThrioModule {
   /// `NavigatorPageBuilder`, and `url` is null or empty, find instance of `T`
   /// in all modules.
   ///
-  static T? get<T>({final String? url, final String? key}) =>
+  static T? get<T>({String? url, String? key}) =>
       anchor.get<T>(url: url, key: key);
 
   /// Returns true if the `url` has been registered.
   ///
-  static bool contains(final String url) =>
+  static bool contains(String url) =>
       anchor.get<NavigatorPageBuilder>(url: url) != null;
 
   /// Get instances by `T` and `url`.
@@ -99,8 +104,7 @@ mixin ThrioModule {
   /// If `T` is `NavigatorRouteObserver`, returns all route observers
   /// matched by `url`.
   ///
-  static Iterable<T> gets<T>({required final String url}) =>
-      anchor.gets<T>(url);
+  static Iterable<T> gets<T>({required String url}) => anchor.gets<T>(url);
 
   @protected
   final modules = <String, ThrioModule>{};
@@ -115,19 +119,37 @@ mixin ThrioModule {
   @protected
   ThrioModule? get parent => parentOf[this];
 
+  String? _url;
+
+  /// Get route url by join all route node's name.
+  ///
+  String get url {
+    _initUrl(this);
+    return _url!;
+  }
+
   /// `ModuleContext` of current module.
   ///
   @protected
   ModuleContext get moduleContext => _moduleContext;
   late ModuleContext _moduleContext;
 
+  /// Call at module init start.
+  ///
+  static void Function(String)? get onModuleInitStart => _onModuleInitStart;
+  static void Function(String)? _onModuleInitStart;
+
+  /// Call at module init end.
+  static void Function(String)? get onModuleInitEnd => _onModuleInitEnd;
+  static void Function(String)? _onModuleInitEnd;
+
   /// A function for registering a module, which will call
   /// the `onModuleRegister` function of the `module`.
   ///
   @protected
   void registerModule(
-    final ThrioModule module,
-    final ModuleContext moduleContext,
+    ThrioModule module,
+    ModuleContext moduleContext,
   ) {
     if (modules.containsKey(module.key)) {
       throw ThrioException(
@@ -196,6 +218,12 @@ mixin ThrioModule {
       }
     }
     for (final module in values) {
+      if (module is ModuleJsonable) {
+        module.onJsonableRegister(module._moduleContext);
+      }
+    }
+    for (final module in values) {
+      onModuleInitStart?.call(module.url);
       if (kDebugMode) {
         final sw = Stopwatch()..start();
         await module.onModuleInit(module._moduleContext);
@@ -204,6 +232,7 @@ mixin ThrioModule {
       } else {
         await module.onModuleInit(module._moduleContext);
       }
+      onModuleInitEnd?.call(module.url);
       await module.initModule();
     }
     for (final module in values) {
@@ -214,12 +243,12 @@ mixin ThrioModule {
   /// A function for registering submodules.
   ///
   @protected
-  void onModuleRegister(final ModuleContext moduleContext) {}
+  void onModuleRegister(ModuleContext moduleContext) {}
 
   /// A function for module initialization.
   ///
   @protected
-  Future<void> onModuleInit(final ModuleContext moduleContext) async {}
+  Future<void> onModuleInit(ModuleContext moduleContext) async {}
 
   /// Returns whether the module is loaded.
   ///
@@ -229,26 +258,39 @@ mixin ThrioModule {
   /// Called when the first page in the module is about to be pushed.
   ///
   @protected
-  Future<void> onModuleLoading(final ModuleContext moduleContext) async =>
+  Future<void> onModuleLoading(ModuleContext moduleContext) async =>
       verbose('onModuleLoading: $key');
 
   /// Called when the last page in the module is closed.
   ///
   @protected
-  Future<void> onModuleUnloading(final ModuleContext moduleContext) async =>
+  Future<void> onModuleUnloading(ModuleContext moduleContext) async =>
       verbose('onModuleUnloading: $key');
 
   /// A function for module asynchronous initialization.
   ///
   @protected
-  Future<void> onModuleAsyncInit(final ModuleContext moduleContext) async {}
+  Future<void> onModuleAsyncInit(ModuleContext moduleContext) async {}
 
   @protected
   bool get navigatorLogEnabled => navigatorLogging;
 
   @protected
-  set navigatorLogEnabled(final bool enabled) => navigatorLogging = enabled;
+  set navigatorLogEnabled(bool enabled) => navigatorLogging = enabled;
 
   @override
   String toString() => '$key: ${modules.keys.toString()}';
+
+  void _initUrl(ThrioModule module) {
+    if (module._url == null) {
+      var parentUrl = '';
+      final parentModule = module.parent;
+      if (parentModule != null &&
+          parentModule != anchor &&
+          parentModule.key.isNotEmpty) {
+        parentUrl = parentModule.url;
+      }
+      module._url = '$parentUrl/${module.key}';
+    }
+  }
 }

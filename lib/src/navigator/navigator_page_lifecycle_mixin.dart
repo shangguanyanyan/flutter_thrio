@@ -45,10 +45,6 @@ mixin NavigatorPageLifecycleMixin<T extends StatefulWidget> on State<T> {
 
   bool _unmounted = false;
 
-  bool _disposed = false;
-
-  bool get disposed => _disposed;
-
   @override
   void initState() {
     super.initState();
@@ -62,32 +58,30 @@ mixin NavigatorPageLifecycleMixin<T extends StatefulWidget> on State<T> {
     super.didChangeDependencies();
     _init();
     _initAppear.runOnce(() {
-      if (!_current.isBuilt || (_current.isSelected != false)) {
+      if (!_current.isBuilt || _current.isSelected != false) {
         Future(() => didAppear(_current));
       }
     });
   }
 
   @override
-  void didUpdateWidget(final T oldWidget) {
+  void didUpdateWidget(T oldWidget) {
     super.didUpdateWidget(oldWidget);
     _init();
   }
 
-  void didAppear(final RouteSettings settings) {
+  void didAppear(RouteSettings settings) {
     verbose(
         'NavigatorPageLifecycleMixin didAppear: ${settings.name}, $runtimeType, hash: ${settings.hashCode}');
   }
 
-  void didDisappear(final RouteSettings settings) {
+  void didDisappear(RouteSettings settings) {
     verbose(
         'NavigatorPageLifecycleMixin didDisappear: ${settings.name}, $runtimeType, hash: ${settings.hashCode}');
   }
 
   @override
   void dispose() {
-    _disposed = true;
-
     _currentObserverCallback?.call();
     for (final callback in _anchorsObserverCallbacks) {
       callback();
@@ -106,12 +100,7 @@ mixin NavigatorPageLifecycleMixin<T extends StatefulWidget> on State<T> {
 
     _anchors = NavigatorPage.routeSettingsListOf(context);
     // 链路上重复的 settings 要去掉
-    _anchors.removeWhere((final it) => it.name == _current.name);
-
-    verbose(
-        'NavigatorPageLifecycleMixin current: $runtimeType, hash: ${_current.hashCode} ${_current.name} ');
-    verbose(
-        'NavigatorPageLifecycleMixin anchors: ${_anchors.map((final e) => e.name).join(',')} ');
+    _anchors.removeWhere((it) => it.name == _current.name);
 
     for (final callback in _anchorsObserverCallbacks) {
       callback();
@@ -145,7 +134,7 @@ class _CurrentLifecycleObserver with NavigatorPageObserver {
   RouteSettings? get settings => _delegate._current;
 
   @override
-  void didAppear(final RouteSettings routeSettings) {
+  void didAppear(RouteSettings routeSettings) {
     // state not mounted, not trigger didAppear
     if (_delegate._unmounted) {
       return;
@@ -157,11 +146,8 @@ class _CurrentLifecycleObserver with NavigatorPageObserver {
   }
 
   @override
-  void didDisappear(final RouteSettings routeSettings) {
+  void didDisappear(RouteSettings routeSettings) {
     // state not disposed and not mounted, not trigger didDisappear
-    if (!_delegate._disposed && _delegate._unmounted) {
-      return;
-    }
     if (_delegate._current.name == routeSettings.name &&
         routeSettings.isSelected != false) {
       _delegate.didDisappear(routeSettings);
@@ -180,29 +166,29 @@ class _AnchorLifecycleObserver with NavigatorPageObserver {
   RouteSettings? get settings => _anchor;
 
   @override
-  void didAppear(final RouteSettings routeSettings) {
+  void didAppear(RouteSettings routeSettings) {
     final callback = _delegate._currentObserver.didAppear;
     _lifecycleCallback(callback, routeSettings);
   }
 
   @override
-  void didDisappear(final RouteSettings routeSettings) {
+  void didDisappear(RouteSettings routeSettings) {
     final callback = _delegate._currentObserver.didDisappear;
     _lifecycleCallback(callback, routeSettings);
   }
 
   void _lifecycleCallback(
-    final void Function(RouteSettings) callback,
-    final RouteSettings routeSettings,
+    void Function(RouteSettings) callback,
+    RouteSettings routeSettings,
   ) {
     if (_anchor.name != routeSettings.name ||
         _delegate._current.isSelected == false) {
       return;
     }
-    final idx = _delegate._anchors
-        .indexWhere((final it) => it.name == routeSettings.name);
+    final idx =
+        _delegate._anchors.indexWhere((it) => it.name == routeSettings.name);
     final ins = _delegate._anchors.sublist(0, idx);
-    if (ins.every((final it) => it.isSelected == true)) {
+    if (ins.every((it) => it.isSelected == true)) {
       callback(_delegate._current);
     }
   }
@@ -215,10 +201,7 @@ class _NavigatorMountedObserver extends NavigatorObserver {
   final NavigatorPageLifecycleMixin _delegate;
 
   @override
-  void didPop(
-    final Route<dynamic> route,
-    final Route<dynamic>? previousRoute,
-  ) {
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
     if (_delegate._currentObserverCallback == null) {
       return;
     }
@@ -228,10 +211,7 @@ class _NavigatorMountedObserver extends NavigatorObserver {
   }
 
   @override
-  void didRemove(
-    final Route<dynamic> route,
-    final Route<dynamic>? previousRoute,
-  ) {
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) {
     if (_delegate._currentObserverCallback == null) {
       return;
     }
@@ -242,10 +222,7 @@ class _NavigatorMountedObserver extends NavigatorObserver {
   }
 
   @override
-  void didReplace({
-    final Route<dynamic>? newRoute,
-    final Route<dynamic>? oldRoute,
-  }) {
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
     if (_delegate._currentObserverCallback == null) {
       return;
     }

@@ -6,6 +6,7 @@
 import 'package:flutter_thrio/flutter_thrio.dart';
 
 import 'flutter1/module.dart' as flutter1;
+import 'flutter11/module.dart' as flutter11;
 import 'flutter3/module.dart' as flutter3;
 import 'flutter5/module.dart' as flutter5;
 import 'flutter7/module.dart' as flutter7;
@@ -16,16 +17,17 @@ class Module with ThrioModule, ModuleParamScheme {
   String get key => 'biz1';
 
   @override
-  void onModuleRegister(final ModuleContext moduleContext) {
+  void onModuleRegister(ModuleContext moduleContext) {
     registerModule(flutter1.Module(), moduleContext);
     registerModule(flutter3.Module(), moduleContext);
     registerModule(flutter5.Module(), moduleContext);
     registerModule(flutter7.Module(), moduleContext);
     registerModule(flutter9.Module(), moduleContext);
+    registerModule(flutter11.Module(), moduleContext);
   }
 
   @override
-  void onParamSchemeRegister(final ModuleContext moduleContext) {
+  void onParamSchemeRegister(ModuleContext moduleContext) {
     registerParamScheme<int>('intValue');
   }
 }

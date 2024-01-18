@@ -82,7 +82,6 @@ NS_ASSUME_NONNULL_BEGIN
                params:(id _Nullable)params
              animated:(BOOL)animated
        fromEntrypoint:(NSString *_Nullable)fromEntrypoint
-           fromPageId:(NSUInteger)fromPageId
                result:(ThrioNumberCallback _Nullable)result
          poppedResult:(ThrioIdCallback _Nullable)poppedResult {
     if (self.thrio_routeType != NavigatorRouteTypeNone) {
@@ -98,7 +97,6 @@ NS_ASSUME_NONNULL_BEGIN
                                                                         params:params];
     NavigatorPageRoute *newRoute = [NavigatorPageRoute routeWithSettings:settings];
     newRoute.fromEntrypoint = fromEntrypoint;
-    newRoute.fromPageId = fromPageId;
     newRoute.poppedResult = poppedResult;
     
     if ([self isKindOfClass:NavigatorFlutterViewController.class]) {
@@ -106,9 +104,8 @@ NS_ASSUME_NONNULL_BEGIN
         NSMutableDictionary *arguments = [NSMutableDictionary dictionaryWithDictionary:[settings toArgumentsWithParams:serializeParams]];
         [arguments setObject:[NSNumber numberWithBool:animated] forKey:@"animated"];
         NSString *entrypoint = [(NavigatorFlutterViewController *)self entrypoint];
-        NSUInteger pageId = [(NavigatorFlutterViewController *)self pageId];
         NavigatorRouteSendChannel *channel =
-        [NavigatorFlutterEngineFactory.shared getSendChannelByPageId:pageId withEntrypoint:entrypoint];
+        [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:entrypoint];
         __weak typeof(self) weakSelf = self;
         [channel push:arguments result:^(BOOL r) {
             __strong typeof(weakSelf) strongSelf = weakSelf;
@@ -187,9 +184,7 @@ NS_ASSUME_NONNULL_BEGIN
     
     if ([self isKindOfClass:NavigatorFlutterViewController.class]) {
         NSString *entrypoint = [(NavigatorFlutterViewController *)self entrypoint];
-        NSUInteger pageId = [(NavigatorFlutterViewController *)self pageId];
-        NavigatorRouteSendChannel *channel = [NavigatorFlutterEngineFactory.shared getSendChannelByPageId:pageId
-                                                                                           withEntrypoint:entrypoint];
+        NavigatorRouteSendChannel *channel = [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:entrypoint];
         // 发送给需要关闭页面的引擎
         [channel maybePop:arguments result:result];
     } else {
@@ -220,9 +215,7 @@ NS_ASSUME_NONNULL_BEGIN
     if ([self isKindOfClass:NavigatorFlutterViewController.class]) {
         self.thrio_routeType = NavigatorRouteTypePopping;
         NSString *entrypoint = [(NavigatorFlutterViewController *)self entrypoint];
-        NSUInteger pageId = [(NavigatorFlutterViewController *)self pageId];
-        NavigatorRouteSendChannel *channel = [NavigatorFlutterEngineFactory.shared getSendChannelByPageId:pageId
-                                                                                           withEntrypoint:entrypoint];
+        NavigatorRouteSendChannel *channel = [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:entrypoint];
         __weak typeof(self) weakself = self;
         // 发送给需要关闭页面的引擎
         [channel pop:arguments result:^(BOOL r) {
@@ -248,10 +241,9 @@ NS_ASSUME_NONNULL_BEGIN
                 }
                 // 检查打开页面的源引擎是否和关闭页面的源引擎不同，不同则继续发送onPop
                 if (route.fromEntrypoint && route.fromPageId != kNavigatorRoutePageIdNone &&
-                    !([route.fromEntrypoint isEqualToString:entrypoint] && route.fromPageId == pageId)) {
+                    ![route.fromEntrypoint isEqualToString:entrypoint]) {
                     NavigatorRouteSendChannel *channel =
-                    [NavigatorFlutterEngineFactory.shared getSendChannelByPageId:route.fromPageId
-                                                                  withEntrypoint:route.fromEntrypoint];
+                    [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:route.fromEntrypoint];
                     [channel pop:arguments result:nil];
                 }
             }
@@ -271,8 +263,7 @@ NS_ASSUME_NONNULL_BEGIN
                 // 检查打开页面的源引擎是否来自Flutter引擎，是则发送onPop
                 if (route.fromEntrypoint && route.fromPageId != kNavigatorRoutePageIdNone) {
                     NavigatorRouteSendChannel *channel =
-                    [NavigatorFlutterEngineFactory.shared getSendChannelByPageId:route.fromPageId
-                                                                  withEntrypoint:route.fromEntrypoint];
+                    [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:route.fromEntrypoint];
                     [channel pop:arguments result:nil];
                 }
             }
@@ -299,15 +290,14 @@ NS_ASSUME_NONNULL_BEGIN
         return;
     }
     if ([self isKindOfClass:NavigatorFlutterViewController.class]) {
+        self.thrio_hidesNavigationBar = @YES;
         NSMutableDictionary *arguments =
         [NSMutableDictionary dictionaryWithDictionary:[route.settings toArgumentsWithParams:nil]];
         [arguments setObject:[NSNumber numberWithBool:animated] forKey:@"animated"];
         __weak typeof(self) weakself = self;
         NSString *entrypoint = [(NavigatorFlutterViewController *)self entrypoint];
-        NSUInteger pageId = [(NavigatorFlutterViewController *)self pageId];
         NavigatorRouteSendChannel *channel =
-        [NavigatorFlutterEngineFactory.shared getSendChannelByPageId:pageId
-                                                      withEntrypoint:entrypoint];
+        [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:entrypoint];
         [channel popTo:arguments result:^(BOOL r) {
             __strong typeof(weakself) strongSelf = weakself;
             if (r) {
@@ -344,10 +334,8 @@ NS_ASSUME_NONNULL_BEGIN
         [arguments setObject:[NSNumber numberWithBool:animated] forKey:@"animated"];
         __weak typeof(self) weakself = self;
         NSString *entrypoint = [(NavigatorFlutterViewController *)self entrypoint];
-        NSUInteger pageId = [(NavigatorFlutterViewController *)self pageId];
         NavigatorRouteSendChannel *channel =
-        [NavigatorFlutterEngineFactory.shared getSendChannelByPageId:pageId
-                                                      withEntrypoint:entrypoint];
+        [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:entrypoint];
         [channel remove:arguments result:^(BOOL r) {
             __strong typeof(weakself) strongSelf = weakself;
             if (r) {
@@ -400,10 +388,8 @@ NS_ASSUME_NONNULL_BEGIN
     if ([self isKindOfClass:NavigatorFlutterViewController.class]) {
         NSDictionary *arguments = [oldRoute.settings toArgumentsWithNewUrl:newUrl newIndex:newIndex];
         NSString *entrypoint = [(NavigatorFlutterViewController *)self entrypoint];
-        NSUInteger pageId = [(NavigatorFlutterViewController *)self pageId];
         NavigatorRouteSendChannel *channel =
-        [NavigatorFlutterEngineFactory.shared getSendChannelByPageId:pageId
-                                                      withEntrypoint:entrypoint];
+        [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:entrypoint];
         [channel replace:arguments result:^(BOOL r) {
             if (r) {
                 NavigatorRouteSettings *newSettings = [NavigatorRouteSettings settingsWithUrl:newUrl
@@ -433,15 +419,20 @@ NS_ASSUME_NONNULL_BEGIN
                 return;
             }
         }
+    } 
+    if ([self isKindOfClass:NavigatorFlutterViewController.class]) {
+        NSMutableDictionary *arguments =
+        [NSMutableDictionary dictionaryWithDictionary:[lastRoute.settings toArguments]];
+        [arguments setObject:[NSNumber numberWithBool:inRoot] forKey:@"inRoot"];
+        NSString *entrypoint = [(NavigatorFlutterViewController *)self entrypoint];
+        NavigatorRouteSendChannel *channel =
+        [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:entrypoint];
+        [channel canPop:arguments result:result];
+    } else {
+        // 走原生 vc 逻辑，不处理直接返回 NO
+        result(NO);
+        return;
     }
-    NSMutableDictionary *arguments =
-    [NSMutableDictionary dictionaryWithDictionary:[lastRoute.settings toArguments]];
-    [arguments setObject:[NSNumber numberWithBool:inRoot] forKey:@"inRoot"];
-    NSString *entrypoint = [(NavigatorFlutterViewController *)self entrypoint];
-    NSUInteger pageId = [(NavigatorFlutterViewController *)self pageId];
-    NavigatorRouteSendChannel *channel =
-    [NavigatorFlutterEngineFactory.shared getSendChannelByPageId:pageId withEntrypoint:entrypoint];
-    [channel canPop:arguments result:result];
 }
 
 - (void)thrio_didPushUrl:(NSString *)url index:(NSNumber *)index {
@@ -633,10 +624,8 @@ NS_ASSUME_NONNULL_BEGIN
                 @"name": name,
             };
             NSString *entrypoint = [(NavigatorFlutterViewController *)self entrypoint];
-            NSUInteger pageId = [(NavigatorFlutterViewController *)self pageId];
             NavigatorRouteSendChannel *channel =
-            [NavigatorFlutterEngineFactory.shared getSendChannelByPageId:pageId
-                                                          withEntrypoint:entrypoint];
+            [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:entrypoint];
             [channel notify:arguments];
         } else {
             id deserializeParams = [ThrioModule deserializeParams:params];

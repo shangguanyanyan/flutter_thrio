@@ -32,7 +32,6 @@ import com.foxsofter.flutter_thrio.NullableIntCallback
 import com.foxsofter.flutter_thrio.extension.getEntrypoint
 import com.foxsofter.flutter_thrio.extension.getPageId
 import com.foxsofter.flutter_thrio.module.ModulePageObservers
-import io.flutter.embedding.android.ThrioFlutterActivity
 import io.flutter.embedding.android.ThrioFlutterActivityBase
 import io.flutter.embedding.android.ThrioFlutterFragment
 import java.lang.ref.WeakReference
@@ -50,8 +49,6 @@ internal object PageRoutes : Application.ActivityLifecycleCallbacks {
                 field = value
             }
         }
-
-    var willAppearPageId = 0
 
     val routeHolders by lazy { mutableListOf<PageRouteHolder>() }
 
@@ -72,6 +69,17 @@ internal object PageRoutes : Application.ActivityLifecycleCallbacks {
         null -> routeHolders.lastOrNull()
         else -> routeHolders.lastOrNull { it.hasRoute(url, index) }
     }
+
+    fun lastFlutterRouteHolder(url: String? = null, index: Int? = null): PageRouteHolder? =
+        when (url) {
+            null -> routeHolders.lastOrNull { it.entrypoint != NAVIGATION_NATIVE_ENTRYPOINT }
+            else -> routeHolders.lastOrNull {
+                it.entrypoint != NAVIGATION_NATIVE_ENTRYPOINT && it.hasRoute(
+                    url,
+                    index
+                )
+            }
+        }
 
     fun removedByRemoveRouteHolder(pageId: Int): PageRouteHolder? {
         val index = removedRouteHolders.indexOfLast { it.pageId == pageId }
@@ -188,33 +196,20 @@ internal object PageRoutes : Application.ActivityLifecycleCallbacks {
     }
 
     fun <T> pop(
+        holder: PageRouteHolder,
         params: T?,
         animated: Boolean,
         inRoot: Boolean = false,
         result: BooleanCallback
     ) {
-        val holder = routeHolders.lastOrNull()
-        if (holder == null) {
-            result(false)
-            return
-        }
-
         if (holder.routes.isEmpty()) {
             holder.activity?.get()?.finish()
             routeHolders.remove(holder)
             result(true)
         } else {
-            // 记下次顶部的 Activity 的 holder
-            val secondTopHolder =
-                if (routeHolders.count() > 1) routeHolders[routeHolders.count() - 2] else null
-
             holder.pop<T>(params, animated, inRoot) { it ->
                 if (it) {
                     if (!holder.hasRoute()) {
-                        willAppearPageId =
-                            if (secondTopHolder == null || secondTopHolder.entrypoint == NAVIGATION_NATIVE_ENTRYPOINT) 0
-                            else secondTopHolder.pageId
-
                         holder.activity?.get()?.let {
                             routeHolders.remove(holder)
                             it.finish()
@@ -257,7 +252,7 @@ internal object PageRoutes : Application.ActivityLifecycleCallbacks {
                                     break
                                 }
                             }
-                            FlutterEngineFactory.getEngines(entrypoint).forEach { engine ->
+                            FlutterEngineFactory.getEngines().forEach { engine ->
                                 engine.sendChannel.onPopTo(
                                     poppedToSettings.toArguments()
                                 ) {}
@@ -282,12 +277,6 @@ internal object PageRoutes : Application.ActivityLifecycleCallbacks {
         holder.remove(url, index, animated) {
             if (it) {
                 if (!holder.hasRoute()) {
-                    if (holder == routeHolders.last() && routeHolders.count() > 1) {
-                        val secondTopHolder = routeHolders[routeHolders.count() - 2]
-                        if (secondTopHolder.entrypoint != NAVIGATION_NATIVE_ENTRYPOINT) {
-                            willAppearPageId = secondTopHolder.pageId
-                        }
-                    }
                     val activity = holder.activity?.get()
                     if (activity == null) {
                         routeHolders.remove(holder)
@@ -466,6 +455,20 @@ internal object PageRoutes : Application.ActivityLifecycleCallbacks {
                 val holder = routeHolders.lastOrNull { it.pageId == pageId }
                 holder?.activity = WeakReference(activity)
             }
+//            val fromPageId = savedInstanceState.getInt(NAVIGATION_ROUTE_FROM_PAGE_ID_KEY, NAVIGATION_ROUTE_PAGE_ID_NONE)
+//            if (fromPageId != NAVIGATION_ROUTE_PAGE_ID_NONE) {
+//                activity.intent.putExtra(NAVIGATION_ROUTE_FROM_PAGE_ID_KEY, NAVIGATION_ROUTE_PAGE_ID_NONE)
+//            }
+//            val entrypoint = savedInstanceState.getString(NAVIGATION_ROUTE_ENTRYPOINT_KEY, NAVIGATION_NATIVE_ENTRYPOINT)
+//            if (entrypoint != NAVIGATION_NATIVE_ENTRYPOINT) {
+//                activity.intent.putExtra(NAVIGATION_ROUTE_ENTRYPOINT_KEY, entrypoint)
+//            }
+//            val fromEntrypoint = savedInstanceState.getString(NAVIGATION_ROUTE_FROM_ENTRYPOINT_KEY, NAVIGATION_NATIVE_ENTRYPOINT)
+//            if (fromEntrypoint != NAVIGATION_NATIVE_ENTRYPOINT) {
+//                activity.intent.putExtra(NAVIGATION_ROUTE_FROM_ENTRYPOINT_KEY, fromEntrypoint)
+//            }
+//            val settingsData = savedInstanceState.getSerializable(NAVIGATION_ROUTE_SETTINGS_KEY)
+//            activity.intent.putExtra(NAVIGATION_ROUTE_SETTINGS_KEY, settingsData)
         }
     }
 
@@ -493,6 +496,20 @@ internal object PageRoutes : Application.ActivityLifecycleCallbacks {
         if (pageId != NAVIGATION_ROUTE_PAGE_ID_NONE) {
             outState.putInt(NAVIGATION_ROUTE_PAGE_ID_KEY, pageId)
         }
+//        val fromPageId = activity.intent.getFromPageId()
+//        if (fromPageId != NAVIGATION_ROUTE_PAGE_ID_NONE) {
+//            outState.putInt(NAVIGATION_ROUTE_FROM_PAGE_ID_KEY, fromPageId)
+//        }
+//        val entrypoint = activity.intent.getEntrypoint()
+//        if (entrypoint != NAVIGATION_NATIVE_ENTRYPOINT) {
+//            outState.putString(NAVIGATION_ROUTE_ENTRYPOINT_KEY, entrypoint)
+//        }
+//        val fromEntrypoint = activity.intent.getFromEntrypoint()
+//        if (fromEntrypoint != NAVIGATION_NATIVE_ENTRYPOINT) {
+//            outState.putString(NAVIGATION_ROUTE_FROM_ENTRYPOINT_KEY, fromEntrypoint)
+//        }
+//        val settingsData = activity.intent.getSerializableExtra(NAVIGATION_ROUTE_SETTINGS_KEY)
+//        outState.putSerializable(NAVIGATION_ROUTE_SETTINGS_KEY, settingsData)
     }
 
     override fun onActivityResumed(activity: Activity) {
@@ -539,10 +556,9 @@ internal object PageRoutes : Application.ActivityLifecycleCallbacks {
                 if (activity.isFinishing) {
                     routeHolders.remove(this)
                     this.activity = null
-                    // 需重置标记位，如果 ThrioFlutterActivity 曾经是首页的话，下次进入的时候才会打开第一个页面
+                    // 需重置标记位，如果 ThrioFlutterFragmentActivity 曾经是首页的话，下次进入的时候才会打开第一个页面
                     if (routeHolders.isEmpty()) {
                         ThrioFlutterFragment.isInitialUrlPushed = false
-                        ThrioFlutterActivity.isInitialUrlPushed = false
                     }
                 }
             }

@@ -67,7 +67,6 @@ NS_ASSUME_NONNULL_BEGIN
                params:(id _Nullable)params
              animated:(BOOL)animated
        fromEntrypoint:(NSString *_Nullable)fromEntrypoint
-           fromPageId:(NSUInteger)fromPageId
                result:(ThrioNumberCallback _Nullable)result
          poppedResult:(ThrioIdCallback _Nullable)poppedResult {
     @synchronized (self) {
@@ -78,7 +77,6 @@ NS_ASSUME_NONNULL_BEGIN
                                     params:params
                                   animated:animated
                             fromEntrypoint:fromEntrypoint
-                                fromPageId:fromPageId
                                     result:result
                               poppedResult:poppedResult];
         } else {
@@ -103,7 +101,6 @@ NS_ASSUME_NONNULL_BEGIN
                                                params:params
                                              animated:animated
                                        fromEntrypoint:fromEntrypoint
-                                           fromPageId:fromPageId
                                                result:resultBlock
                                          poppedResult:poppedResult];
             } else {
@@ -117,7 +114,6 @@ NS_ASSUME_NONNULL_BEGIN
                                                   params:params
                                                 animated:animated
                                           fromEntrypoint:fromEntrypoint
-                                              fromPageId:fromPageId
                                                   result:result
                                             poppedResult:poppedResult];
                 };
@@ -229,17 +225,52 @@ NS_ASSUME_NONNULL_BEGIN
             return;
         }
     }
+    NavigatorPageRoute *lastRoute = vc.thrio_lastRoute;
     __weak typeof(self) weakself = self;
     [vc thrio_popParams:params animated:animated inRoot:inRoot result:^(BOOL r) {
         __strong typeof(weakself) strongSelf = weakself;
         if (r) {
             // 只有 FlutterViewController 才能满足条件
-            if (vc.thrio_lastRoute != vc.thrio_firstRoute) {
+            if (lastRoute == vc.thrio_lastRoute && vc.thrio_lastRoute != vc.thrio_firstRoute) {
                 vc.thrio_lastRoute.prev.next = nil;
-                // 只剩一个 route 的时候，需要添加侧滑返回手势
-                if (vc.thrio_firstRoute == vc.thrio_lastRoute) {
-                    [strongSelf thrio_addPopGesture];
-                }
+            }
+            // 只剩一个 route 的时候，需要添加侧滑返回手势
+            if ([vc isKindOfClass:NavigatorFlutterViewController.class] && vc.thrio_firstRoute == vc.thrio_lastRoute) {
+                [strongSelf thrio_addPopGesture];
+            }
+        }
+        if (result) {
+            result(r);
+        }
+    }];
+}
+
+- (void)thrio_popFlutterParams:(id _Nullable)params
+                      animated:(BOOL)animated
+                        result:(ThrioBoolCallback _Nullable)result {
+    UIViewController *vc = self.topViewController;
+    NSInteger idx = self.viewControllers.count - 1;
+    while (![vc isKindOfClass:FlutterViewController.class] && idx >= 0) {
+        vc = self.viewControllers[idx--];
+    }
+    if (![vc isKindOfClass:FlutterViewController.class]) {
+        if (result) {
+            result(NO);
+        }
+        return;
+    }
+    BOOL inRoot = vc.thrio_firstRoute == vc.thrio_lastRoute && idx == 0;
+    NavigatorPageRoute *lastRoute = vc.thrio_lastRoute;
+    __weak typeof(self) weakself = self;
+    [vc thrio_popParams:params animated:animated inRoot:inRoot result:^(BOOL r) {
+        __strong typeof(weakself) strongSelf = weakself;
+        if (r) {
+            if (lastRoute == vc.thrio_lastRoute && vc.thrio_lastRoute != vc.thrio_firstRoute) {
+                vc.thrio_lastRoute.prev.next = nil;
+            }
+            // 只剩一个 route 的时候，需要添加侧滑返回手势
+            if ([vc isKindOfClass:NavigatorFlutterViewController.class] && vc.thrio_firstRoute == vc.thrio_lastRoute) {
+                [strongSelf thrio_addPopGesture];
             }
         }
         if (result) {
@@ -274,6 +305,7 @@ NS_ASSUME_NONNULL_BEGIN
         }
     }];
 }
+
 
 - (void)thrio_removeUrl:(NSString *)url
                   index:(NSNumber *_Nullable)index
@@ -509,8 +541,14 @@ NS_ASSUME_NONNULL_BEGIN
         // 如果是FlutterViewController，无视thrio_willPopBlock，willPop在Dart中已经调用过
         if ([self.topViewController isKindOfClass:NavigatorFlutterViewController.class]) {
             if (self.viewControllers.count > 1) {
-                // 判断前一个页面导航栏是否需要切换
+                // 判断前一个页面如果是NavigatorFlutterViewController，直接将引擎切换到该页面
                 UIViewController *vc = [self.viewControllers objectAtIndex:self.viewControllers.count - 2];
+                if ([vc isKindOfClass:NavigatorFlutterViewController.class]) {
+                    [NavigatorFlutterEngineFactory.shared pushViewController:(NavigatorFlutterViewController *)vc];
+                } else {
+                    [NavigatorFlutterEngineFactory.shared popViewController:(NavigatorFlutterViewController *)self.topViewController];
+                }
+                // 判断前一个页面导航栏是否需要切换
                 if (self.navigationBarHidden != vc.thrio_hidesNavigationBar_.boolValue) {
                     [self setNavigationBarHidden:vc.thrio_hidesNavigationBar_.boolValue];
                 }
@@ -532,7 +570,6 @@ NS_ASSUME_NONNULL_BEGIN
                     if (vcs.count > 1) {
                         previousVC = vcs[vcs.count - 2];
                     }
-                    
                     if (strongSelf.topViewController.thrio_firstRoute) {
                         NavigatorRouteSettings *routeSettings = strongSelf.topViewController.thrio_lastRoute.settings;
                         if (animated) {
@@ -574,6 +611,11 @@ NS_ASSUME_NONNULL_BEGIN
         if (vcs.count > 1) {
             previousVC = vcs[vcs.count - 2];
         }
+        // 判断前一个页面如果是NavigatorFlutterViewController，直接将引擎切换到该页面
+        if ([previousVC isKindOfClass:NavigatorFlutterViewController.class]) {
+            [NavigatorFlutterEngineFactory.shared pushViewController:(NavigatorFlutterViewController *)previousVC];
+        }
+
         UIViewController *vc;
         if (animated) {
             [CATransaction begin];
@@ -642,7 +684,10 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)thrio_didShowViewController:(UIViewController *)viewController animated:(BOOL)animated {
     // 记录最后展示的 Route
     ThrioModule.pageObservers.lastRoute = viewController.thrio_lastRoute;
-    
+    // 如果即将显示的页面为NavigatorFlutterViewController，需要将该页面切换到引擎上
+    if ([viewController isKindOfClass:NavigatorFlutterViewController.class]) {
+        [NavigatorFlutterEngineFactory.shared pushViewController:(NavigatorFlutterViewController *)viewController];
+    }
     // 手势触发的pop，或者UINavigationController的pop方法触发的pop
     if (self.thrio_popingViewController) {
         if (self.thrio_popingViewController == viewController) {
@@ -654,6 +699,9 @@ NS_ASSUME_NONNULL_BEGIN
                 [strongSelf thrio_lastRoute].next = nil;
                 
                 if ([strongSelf.thrio_popingViewController isKindOfClass:NavigatorFlutterViewController.class]) {
+                    if (![viewController isKindOfClass:NavigatorFlutterViewController.class]) {
+                        [NavigatorFlutterEngineFactory.shared popViewController:(NavigatorFlutterViewController *)strongSelf.thrio_popingViewController];
+                    }
                     if (strongSelf.navigationBarHidden != viewController.thrio_hidesNavigationBar_.boolValue) {
                         [strongSelf setNavigationBarHidden:viewController.thrio_hidesNavigationBar_.boolValue];
                     }
@@ -696,7 +744,6 @@ NS_ASSUME_NONNULL_BEGIN
                           params:(id _Nullable)params
                         animated:(BOOL)animated
                   fromEntrypoint:(NSString *_Nullable)fromEntrypoint
-                      fromPageId:(NSUInteger)fromPageId
                           result:(ThrioNumberCallback _Nullable)result
                     poppedResult:(ThrioIdCallback _Nullable)poppedResult {
     if (viewController) {
@@ -708,7 +755,6 @@ NS_ASSUME_NONNULL_BEGIN
                                params:params
                              animated:animated
                        fromEntrypoint:fromEntrypoint
-                           fromPageId:fromPageId
                                result:^(NSNumber *idx) {
             if (idx && [idx boolValue]) {
                 __strong typeof(weakself) strongSelf = weakself;

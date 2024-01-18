@@ -95,6 +95,7 @@ class _NavigatorTabBarViewState extends State<NavigatorTabBarView> {
   void _updateTabController() {
     final newController = widget.controller ?? DefaultTabController.of(context);
     assert(() {
+      // ignore: unnecessary_null_comparison
       if (newController == null) {
         throw FlutterError(
           'No TabController for ${widget.runtimeType}.\n'
@@ -132,7 +133,7 @@ class _NavigatorTabBarViewState extends State<NavigatorTabBarView> {
   }
 
   @override
-  void didUpdateWidget(final NavigatorTabBarView oldWidget) {
+  void didUpdateWidget(NavigatorTabBarView oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.controller != oldWidget.controller) {
       _updateTabController();
@@ -213,7 +214,7 @@ class _NavigatorTabBarViewState extends State<NavigatorTabBarView> {
   }
 
   // Called when the PageView scrolls
-  bool _handleScrollNotification(final ScrollNotification notification) {
+  bool _handleScrollNotification(ScrollNotification notification) {
     if (_warpUnderwayCount > 0) {
       return false;
     }
@@ -248,7 +249,7 @@ class _NavigatorTabBarViewState extends State<NavigatorTabBarView> {
     if (_debugHasScheduledValidChildrenCountCheck) {
       return true;
     }
-    WidgetsBinding.instance.addPostFrameCallback((final duration) {
+    WidgetsBinding.instance.addPostFrameCallback((duration) {
       _debugHasScheduledValidChildrenCountCheck = false;
       if (!mounted) {
         return;
@@ -268,7 +269,7 @@ class _NavigatorTabBarViewState extends State<NavigatorTabBarView> {
   }
 
   @override
-  Widget build(final BuildContext context) {
+  Widget build(BuildContext context) {
     assert(_debugScheduleCheckHasValidChildrenCount());
 
     return NotificationListener<ScrollNotification>(
