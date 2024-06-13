@@ -17,6 +17,8 @@ Future<void> on$RouteCustomHandlerRegister(
         params,
         animated = true,
         result,
+        fromURL,
+        innerURL,
       }) =>
           'good' as TPopParams);
   registerFunc(
@@ -27,12 +29,16 @@ Future<void> on$RouteCustomHandlerRegister(
         params,
         animated = true,
         result,
+        fromURL,
+        innerURL,
       }) =>
           ThrioNavigator.push<TParams, TPopParams>(
             url: biz.biz1.flutter3.url,
             params: params,
             animated: animated,
             result: result,
+            fromURL: fromURL,
+            innerURL: innerURL,
           ));
 
   registerFunc('justascheme://open/biz2/home', <TParams, TPopParams>(
@@ -41,6 +47,8 @@ Future<void> on$RouteCustomHandlerRegister(
     params,
     animated = true,
     result,
+    fromURL,
+    innerURL,
   }) {
     result?.call(-1); // 不拦截
     return null;
@@ -54,11 +62,15 @@ Future<void> on$RouteCustomHandlerRegister(
         params,
         animated = true,
         result,
+        fromURL,
+        innerURL,
       }) =>
           ThrioNavigator.push<TParams, TPopParams>(
             url: biz.biz1.flutter3.url,
             params: params,
             animated: animated,
             result: result,
+            fromURL: fromURL,
+            innerURL: innerURL,
           ));
 }

@@ -24,6 +24,7 @@
 #import "NavigatorConsts.h"
 #import "NavigatorFlutterEngineFactory.h"
 #import "NavigatorFlutterViewController.h"
+#import "NavigatorNavigationController.h"
 #import "NavigatorLogger.h"
 #import "NSObject+ThrioSwizzling.h"
 #import "ThrioModule+JsonDeserializers.h"
@@ -83,6 +84,9 @@ NS_ASSUME_NONNULL_BEGIN
              animated:(BOOL)animated
        fromEntrypoint:(NSString *_Nullable)fromEntrypoint
                result:(ThrioNumberCallback _Nullable)result
+              fromURL:(NSString *_Nullable)fromURL
+              prevURL:(NSString *_Nullable)prevURL
+             innerURL:(NSString *_Nullable)innerURL
          poppedResult:(ThrioIdCallback _Nullable)poppedResult {
     if (self.thrio_routeType != NavigatorRouteTypeNone) {
         if (result) {
@@ -93,8 +97,12 @@ NS_ASSUME_NONNULL_BEGIN
     
     NavigatorRouteSettings *settings = [NavigatorRouteSettings settingsWithUrl:url
                                                                          index:index
+                                                                        params:params
+                                                                      animated:animated
                                                                         nested:self.thrio_firstRoute != nil
-                                                                        params:params];
+                                                                       fromURL:fromURL
+                                                                       prevURL:prevURL
+                                                                      innerURL:innerURL];
     NavigatorPageRoute *newRoute = [NavigatorPageRoute routeWithSettings:settings];
     newRoute.fromEntrypoint = fromEntrypoint;
     newRoute.poppedResult = poppedResult;
@@ -102,7 +110,6 @@ NS_ASSUME_NONNULL_BEGIN
     if ([self isKindOfClass:NavigatorFlutterViewController.class]) {
         id serializeParams = [ThrioModule serializeParams:params];
         NSMutableDictionary *arguments = [NSMutableDictionary dictionaryWithDictionary:[settings toArgumentsWithParams:serializeParams]];
-        [arguments setObject:[NSNumber numberWithBool:animated] forKey:@"animated"];
         NSString *entrypoint = [(NavigatorFlutterViewController *)self entrypoint];
         NavigatorRouteSendChannel *channel =
         [NavigatorFlutterEngineFactory.shared getSendChannelByEntrypoint:entrypoint];
@@ -394,8 +401,12 @@ NS_ASSUME_NONNULL_BEGIN
             if (r) {
                 NavigatorRouteSettings *newSettings = [NavigatorRouteSettings settingsWithUrl:newUrl
                                                                                         index:newIndex
+                                                                                       params:nil
+                                                                                     animated:NO
                                                                                        nested:oldRoute.settings.nested
-                                                                                       params:nil];
+                                                                                      fromURL:oldRoute.settings.fromURL
+                                                                                      prevURL:oldRoute.settings.prevURL
+                                                                                     innerURL:nil];
                 [[oldRoute initWithSettings:newSettings] removeNotify];
             }
             if (result) {
@@ -419,7 +430,7 @@ NS_ASSUME_NONNULL_BEGIN
                 return;
             }
         }
-    } 
+    }
     if ([self isKindOfClass:NavigatorFlutterViewController.class]) {
         NSMutableDictionary *arguments =
         [NSMutableDictionary dictionaryWithDictionary:[lastRoute.settings toArguments]];
@@ -564,7 +575,9 @@ NS_ASSUME_NONNULL_BEGIN
         [self thrio_onNotify:self.thrio_lastRoute];
     }
     
-    if (self.thrio_hidesNavigationBar_ && self.thrio_hidesNavigationBar_.boolValue != self.navigationController.navigationBarHidden) {
+    if ([self.navigationController isKindOfClass:NavigatorNavigationController.class] &&
+        self.thrio_hidesNavigationBar_ &&
+        self.thrio_hidesNavigationBar_.boolValue != self.navigationController.navigationBarHidden) {
         self.navigationController.navigationBarHidden = self.thrio_hidesNavigationBar_.boolValue;
     }
     

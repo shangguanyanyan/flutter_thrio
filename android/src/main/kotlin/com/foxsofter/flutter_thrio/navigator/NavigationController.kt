@@ -61,6 +61,9 @@ internal object NavigationController : Application.ActivityLifecycleCallbacks {
             route.settings.params,
             route.settings.animated,
             route.fromEntrypoint,
+            null,
+            null,
+            null,
             route.fromPageId,
         ) { }
     }
@@ -115,9 +118,12 @@ internal object NavigationController : Application.ActivityLifecycleCallbacks {
             params: T? = null,
             animated: Boolean,
             fromEntrypoint: String = NAVIGATION_NATIVE_ENTRYPOINT,
+            fromURL: String? = null,
+            prevURL: String? = null,
+            innerURL: String? = null,
             fromPageId: Int = NAVIGATION_ROUTE_PAGE_ID_NONE,
             poppedResult: NullableAnyCallback? = null,
-            result: NullableIntCallback?
+            result: NullableIntCallback?,
         ) {
             if (routeType != RouteType.NONE) {
                 result?.invoke(null)
@@ -154,6 +160,9 @@ internal object NavigationController : Application.ActivityLifecycleCallbacks {
             // 序列化参数
             val settings = RouteSettings(url, index).also {
                 it.params = ModuleJsonSerializers.serializeParams(params)
+                it.fromURL = fromURL
+                it.prevURL = prevURL ?: ThrioNavigator.lastRoute()?.settings?.url
+                it.innerURL = innerURL
                 it.animated = animated
             }
             val settingsData = hashMapOf<String, Any?>().also {

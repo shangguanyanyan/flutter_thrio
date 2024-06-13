@@ -125,7 +125,9 @@ class ThrioNavigatorImplement {
 
   NavigatorWidgetState? get navigatorState => _stateKey.currentState;
 
-  final _pushBeginHandlers = RegistrySet();
+  final _pushBeginHandlers = RegistrySet<NavigatorPushHandle>();
+
+  final _pushReturnHandlers = RegistrySet<NavigatorPushHandle>();
 
   final poppedResults = <String, NavigatorParamsCallback>{};
 
@@ -158,34 +160,48 @@ class ThrioNavigatorImplement {
     _channel.invokeMethod<bool>('ready');
   }
 
-  VoidCallback registerPushBeginHandle(NavigatorPushBeginHandle handle) =>
+  VoidCallback registerPushBeginHandle(NavigatorPushHandle handle) =>
       _pushBeginHandlers.registry(handle);
+
+  VoidCallback registerPushReturnHandle(NavigatorPushHandle handle) =>
+      _pushReturnHandlers.registry(handle);
 
   Future<TPopParams?> push<TParams, TPopParams>({
     required String url,
     TParams? params,
     bool animated = true,
     NavigatorIntCallback? result,
+    String? fromURL,
+    String? innerURL,
   }) async {
-    await _onPushBeginHandle(url: url, params: params);
+    await _onPushBeginHandle(
+      url: url,
+      params: params,
+      fromURL: fromURL,
+      innerURL: innerURL,
+    );
 
     final completer = Completer<TPopParams?>();
 
     final handled = await _pushToHandler(
-      url,
-      params,
-      animated,
-      completer,
-      result,
+      url: url,
+      params: params,
+      animated: animated,
+      completer: completer,
+      result: result,
+      fromURL: fromURL,
+      innerURL: innerURL,
     );
     if (!handled) {
       Future<void> pushFuture() {
         final resultCompleter = Completer();
         _pushToNative<TParams, TPopParams>(
-          url,
-          params,
-          animated,
-          completer,
+          url: url,
+          params: params,
+          animated: animated,
+          completer: completer,
+          fromURL: fromURL,
+          innerURL: innerURL,
         ).then((index) {
           resultCompleter.complete();
           result?.call(index);
@@ -202,9 +218,22 @@ class ThrioNavigatorImplement {
   Future<void> _onPushBeginHandle<TParams>({
     required String url,
     TParams? params,
+    String? fromURL,
+    String? innerURL,
   }) async {
     for (final handle in _pushBeginHandlers) {
-      await handle(url, params);
+      await handle(url, params: params, fromURL: fromURL, innerURL: innerURL);
+    }
+  }
+
+  Future<void> _onPushReturnHandle<TParams>({
+    required String url,
+    TParams? params,
+    String? fromURL,
+    String? innerURL,
+  }) async {
+    for (final handle in _pushReturnHandlers) {
+      await handle(url, params: params, fromURL: fromURL, innerURL: innerURL);
     }
   }
 
@@ -214,6 +243,8 @@ class ThrioNavigatorImplement {
     TParams? params,
     bool animated = true,
     NavigatorIntCallback? result,
+    String? fromURL,
+    String? innerURL,
   }) async {
     final queryParametersAll = handler.queryParamsDecoded
         ? uri.queryParametersAll
@@ -224,6 +255,8 @@ class ThrioNavigatorImplement {
       params: params,
       animated: animated,
       result: result,
+      fromURL: fromURL,
+      innerURL: innerURL,
     );
   }
 
@@ -232,28 +265,48 @@ class ThrioNavigatorImplement {
     TParams? params,
     bool animated = true,
     NavigatorIntCallback? result,
+    String? fromURL,
+    String? innerURL,
   }) async {
-    await _onPushBeginHandle(url: url, params: params);
+    await _onPushBeginHandle(
+      url: url,
+      params: params,
+      fromURL: fromURL,
+      innerURL: innerURL,
+    );
 
     final completer = Completer<TPopParams?>();
 
-    final handled =
-        await _pushToHandler(url, params, animated, completer, (index) async {
-      result?.call(index);
-      if (index > 0) {
-        await removeAll(url: url, excludeIndex: index);
-      }
-    });
+    final handled = await _pushToHandler(
+      url: url,
+      params: params,
+      animated: animated,
+      completer: completer,
+      result: (index) async {
+        if (index > 0) {
+          await removeAll(url: url, excludeIndex: index);
+        }
+        result?.call(index);
+      },
+      fromURL: fromURL,
+      innerURL: innerURL,
+    );
     if (!handled) {
       Future<void> pushFuture() {
         final resultCompleter = Completer();
-        _pushToNative<TParams, TPopParams>(url, params, animated, completer)
-            .then<void>((index) async {
-          resultCompleter.complete();
-          result?.call(index);
+        _pushToNative<TParams, TPopParams>(
+          url: url,
+          params: params,
+          animated: animated,
+          completer: completer,
+          fromURL: fromURL,
+          innerURL: innerURL,
+        ).then<void>((index) async {
           if (index > 0) {
             await removeAll(url: url, excludeIndex: index);
           }
+          resultCompleter.complete();
+          result?.call(index);
         });
         return resultCompleter.future;
       }
@@ -269,8 +322,15 @@ class ThrioNavigatorImplement {
     TParams? params,
     bool animated = true,
     NavigatorIntCallback? result,
+    String? fromURL,
+    String? innerURL,
   }) async {
-    await _onPushBeginHandle(url: url, params: params);
+    await _onPushBeginHandle(
+      url: url,
+      params: params,
+      fromURL: fromURL,
+      innerURL: innerURL,
+    );
 
     final completer = Completer<TPopParams>();
 
@@ -278,13 +338,20 @@ class ThrioNavigatorImplement {
     if (lastSetting == null) {
       throw ThrioException('no route to replace');
     }
-    final handled =
-        await _pushToHandler(url, params, animated, completer, (index) async {
-      if (index > 0) {
-        await remove(url: lastSetting.url, index: lastSetting.index);
-      }
-      result?.call(index);
-    });
+    final handled = await _pushToHandler(
+      url: url,
+      params: params,
+      animated: animated,
+      completer: completer,
+      result: (index) async {
+        if (index > 0) {
+          await remove(url: lastSetting.url, index: lastSetting.index);
+        }
+        result?.call(index);
+      },
+      fromURL: fromURL,
+      innerURL: innerURL,
+    );
     if (!handled) {
       Future<void> pushFuture() async {
         final resultCompleter = Completer();
@@ -292,9 +359,14 @@ class ThrioNavigatorImplement {
         if (lastSetting == null) {
           throw ThrioException('no route to replace');
         }
-        unawaited(
-            _pushToNative<TParams, TPopParams>(url, params, animated, completer)
-                .then((index) async {
+        unawaited(_pushToNative<TParams, TPopParams>(
+          url: url,
+          params: params,
+          animated: animated,
+          completer: completer,
+          fromURL: fromURL,
+          innerURL: innerURL,
+        ).then((index) async {
           resultCompleter.complete();
           if (index > 0) {
             await remove(url: lastSetting.url, index: lastSetting.index);
@@ -316,8 +388,15 @@ class ThrioNavigatorImplement {
     TParams? params,
     bool animated = true,
     NavigatorIntCallback? result,
+    String? fromURL,
+    String? innerURL,
   }) async {
-    await _onPushBeginHandle(url: url, params: params);
+    await _onPushBeginHandle(
+      url: url,
+      params: params,
+      fromURL: fromURL,
+      innerURL: innerURL,
+    );
 
     final completer = Completer<TPopParams>();
 
@@ -327,13 +406,20 @@ class ThrioNavigatorImplement {
       result?.call(0);
     }
 
-    final handled =
-        await _pushToHandler(url, params, animated, completer, (index) async {
-      if (index > 0) {
-        await removeBelowUntil(predicate: (url) => url == toUrl);
-      }
-      result?.call(index);
-    });
+    final handled = await _pushToHandler(
+      url: url,
+      params: params,
+      animated: animated,
+      completer: completer,
+      result: (index) async {
+        if (index > 0) {
+          await removeBelowUntil(predicate: (url) => url == toUrl);
+        }
+        result?.call(index);
+      },
+      fromURL: fromURL,
+      innerURL: innerURL,
+    );
     if (!handled) {
       Future<void> pushFuture() async {
         final resultCompleter = Completer();
@@ -343,9 +429,14 @@ class ThrioNavigatorImplement {
           result?.call(0);
           resultCompleter.complete();
         }
-        unawaited(
-            _pushToNative<TParams, TPopParams>(url, params, animated, completer)
-                .then((index) async {
+        unawaited(_pushToNative<TParams, TPopParams>(
+          url: url,
+          params: params,
+          animated: animated,
+          completer: completer,
+          fromURL: fromURL,
+          innerURL: innerURL,
+        ).then((index) async {
           resultCompleter.complete();
           if (index > 0) {
             await removeBelowUntil(predicate: (url) => url == toUrl);
@@ -367,8 +458,15 @@ class ThrioNavigatorImplement {
     TParams? params,
     bool animated = true,
     NavigatorIntCallback? result,
+    String? fromURL,
+    String? innerURL,
   }) async {
-    await _onPushBeginHandle(url: url, params: params);
+    await _onPushBeginHandle(
+      url: url,
+      params: params,
+      fromURL: fromURL,
+      innerURL: innerURL,
+    );
 
     final completer = Completer<TPopParams>();
 
@@ -377,13 +475,20 @@ class ThrioNavigatorImplement {
     if (route == null) {
       result?.call(0);
     }
-    final handled =
-        await _pushToHandler(url, params, animated, completer, (index) async {
-      if (index > 0) {
-        await removeBelowUntilFirst(predicate: (url) => url == toUrl);
-      }
-      result?.call(index);
-    });
+    final handled = await _pushToHandler(
+      url: url,
+      params: params,
+      animated: animated,
+      completer: completer,
+      result: (index) async {
+        if (index > 0) {
+          await removeBelowUntilFirst(predicate: (url) => url == toUrl);
+        }
+        result?.call(index);
+      },
+      fromURL: fromURL,
+      innerURL: innerURL,
+    );
     if (!handled) {
       Future<void> pushFuture() async {
         final resultCompleter = Completer();
@@ -393,9 +498,14 @@ class ThrioNavigatorImplement {
           result?.call(0);
           resultCompleter.complete();
         }
-        unawaited(
-            _pushToNative<TParams, TPopParams>(url, params, animated, completer)
-                .then((index) async {
+        unawaited(_pushToNative<TParams, TPopParams>(
+          url: url,
+          params: params,
+          animated: animated,
+          completer: completer,
+          fromURL: fromURL,
+          innerURL: innerURL,
+        ).then((index) async {
           resultCompleter.complete();
           if (index > 0) {
             await removeBelowUntilFirst(predicate: (url) => url == toUrl);
@@ -417,8 +527,15 @@ class ThrioNavigatorImplement {
     TParams? params,
     bool animated = true,
     NavigatorIntCallback? result,
+    String? fromURL,
+    String? innerURL,
   }) async {
-    await _onPushBeginHandle(url: url, params: params);
+    await _onPushBeginHandle(
+      url: url,
+      params: params,
+      fromURL: fromURL,
+      innerURL: innerURL,
+    );
 
     final completer = Completer<TPopParams>();
 
@@ -429,13 +546,20 @@ class ThrioNavigatorImplement {
       result?.call(0);
     }
 
-    final handled =
-        await _pushToHandler(url, params, animated, completer, (index) async {
-      if (index > 0) {
-        await removeBelowUntil(predicate: predicate);
-      }
-      result?.call(index);
-    });
+    final handled = await _pushToHandler(
+      url: url,
+      params: params,
+      animated: animated,
+      completer: completer,
+      result: (index) async {
+        if (index > 0) {
+          await removeBelowUntil(predicate: predicate);
+        }
+        result?.call(index);
+      },
+      fromURL: fromURL,
+      innerURL: innerURL,
+    );
     if (!handled) {
       Future<void> pushFuture() async {
         final resultCompleter = Completer();
@@ -446,9 +570,14 @@ class ThrioNavigatorImplement {
           resultCompleter.complete();
           result?.call(0);
         }
-        unawaited(
-            _pushToNative<TParams, TPopParams>(url, params, animated, completer)
-                .then((index) async {
+        unawaited(_pushToNative<TParams, TPopParams>(
+          url: url,
+          params: params,
+          animated: animated,
+          completer: completer,
+          fromURL: fromURL,
+          innerURL: innerURL,
+        ).then((index) async {
           resultCompleter.complete();
           if (index > 0) {
             await removeBelowUntil(predicate: predicate);
@@ -470,8 +599,15 @@ class ThrioNavigatorImplement {
     TParams? params,
     bool animated = true,
     NavigatorIntCallback? result,
+    String? fromURL,
+    String? innerURL,
   }) async {
-    await _onPushBeginHandle(url: url, params: params);
+    await _onPushBeginHandle(
+      url: url,
+      params: params,
+      fromURL: fromURL,
+      innerURL: innerURL,
+    );
 
     final completer = Completer<TPopParams>();
 
@@ -482,13 +618,20 @@ class ThrioNavigatorImplement {
       result?.call(0);
     }
 
-    final handled =
-        await _pushToHandler(url, params, animated, completer, (index) async {
-      if (index > 0) {
-        await removeBelowUntilFirst(predicate: predicate);
-      }
-      result?.call(index);
-    });
+    final handled = await _pushToHandler(
+      url: url,
+      params: params,
+      animated: animated,
+      completer: completer,
+      result: (index) async {
+        if (index > 0) {
+          await removeBelowUntilFirst(predicate: predicate);
+        }
+        result?.call(index);
+      },
+      fromURL: fromURL,
+      innerURL: innerURL,
+    );
     if (!handled) {
       Future<void> pushFuture() async {
         final resultCompleter = Completer();
@@ -499,9 +642,14 @@ class ThrioNavigatorImplement {
           resultCompleter.complete();
           result?.call(0);
         }
-        unawaited(
-            _pushToNative<TParams, TPopParams>(url, params, animated, completer)
-                .then((index) async {
+        unawaited(_pushToNative<TParams, TPopParams>(
+          url: url,
+          params: params,
+          animated: animated,
+          completer: completer,
+          fromURL: fromURL,
+          innerURL: innerURL,
+        ).then((index) async {
           resultCompleter.complete();
           if (index > 0) {
             await removeBelowUntilFirst(predicate: predicate);
@@ -517,13 +665,15 @@ class ThrioNavigatorImplement {
     return completer.future;
   }
 
-  Future<bool> _pushToHandler<TParams, TPopParams>(
-    String url,
+  Future<bool> _pushToHandler<TParams, TPopParams>({
+    required String url,
     TParams? params,
-    bool animated,
-    Completer<TPopParams?> completer,
+    required bool animated,
+    required Completer<TPopParams?> completer,
     NavigatorIntCallback? result,
-  ) async {
+    String? fromURL,
+    String? innerURL,
+  }) async {
     var handled = false;
     final uri = Uri.parse(url);
     var handler =
@@ -545,6 +695,8 @@ class ThrioNavigatorImplement {
             index = idx;
             result?.call(index);
           },
+          fromURL: fromURL,
+          innerURL: innerURL,
         );
         if (index != navigatorResultTypeNotHandled) {
           handled = true;
@@ -556,12 +708,14 @@ class ThrioNavigatorImplement {
     return handled;
   }
 
-  Future<int> _pushToNative<TParams, TPopParams>(
-    String url,
+  Future<int> _pushToNative<TParams, TPopParams>({
+    required String url,
     TParams? params,
-    bool animated,
-    Completer<TPopParams?> completer,
-  ) {
+    required bool animated,
+    required Completer<TPopParams?> completer,
+    String? fromURL,
+    String? innerURL,
+  }) {
     final qidx = url.indexOf('?');
     final ps = params ?? <String, dynamic>{};
     var noQueryUrl = url;
@@ -573,8 +727,23 @@ class ThrioNavigatorImplement {
       }
       noQueryUrl = url.substring(0, qidx);
     }
+    unawaited(completer.future.then((value) {
+      _onPushReturnHandle(
+        url: url,
+        params: params,
+        fromURL: fromURL,
+        innerURL: innerURL,
+      );
+    }));
+
     return _sendChannel
-        .push(url: noQueryUrl, params: ps, animated: animated)
+        .push(
+      url: noQueryUrl,
+      params: ps,
+      animated: animated,
+      fromURL: fromURL,
+      innerURL: innerURL,
+    )
         .then((index) {
       if (index > 0) {
         final routeName = '$index $noQueryUrl';
@@ -751,14 +920,19 @@ class ThrioNavigatorImplement {
     TParams? params,
     bool animated = true,
   }) =>
-      _sendChannel.maybePop<TParams>(params: params, animated: animated);
+      _sendChannel.maybePop<TParams>(
+        params: params,
+        animated: animated,
+      );
 
   Future<bool> pop<TParams>({
     TParams? params,
     bool animated = true,
   }) {
-    Future<bool> popFuture() =>
-        _sendChannel.pop<TParams>(params: params, animated: animated);
+    Future<bool> popFuture() => _sendChannel.pop<TParams>(
+          params: params,
+          animated: animated,
+        );
     return _taskQueue.add<bool>(popFuture).then((value) => value ?? false);
   }
 
@@ -766,8 +940,10 @@ class ThrioNavigatorImplement {
     TParams? params,
     bool animated = true,
   }) {
-    Future<bool> popFuture() =>
-        _sendChannel.popFlutter<TParams>(params: params, animated: animated);
+    Future<bool> popFuture() => _sendChannel.popFlutter<TParams>(
+          params: params,
+          animated: animated,
+        );
     return _taskQueue.add<bool>(popFuture).then((value) => value ?? false);
   }
 
@@ -780,7 +956,10 @@ class ThrioNavigatorImplement {
         return false;
       }
       return _sendChannel.popTo(
-          url: rootRoute.url, index: rootRoute.index, animated: animated);
+        url: rootRoute.url,
+        index: rootRoute.index,
+        animated: animated,
+      );
     }
 
     return _taskQueue.add<bool>(popToFuture).then((value) => value ?? false);
@@ -788,10 +967,14 @@ class ThrioNavigatorImplement {
 
   Future<bool> popTo({
     required String url,
+    int? index,
     bool animated = true,
   }) {
-    Future<bool> popToFuture() =>
-        _sendChannel.popTo(url: url, animated: animated);
+    Future<bool> popToFuture() => _sendChannel.popTo(
+          url: url,
+          index: index ?? 0,
+          animated: animated,
+        );
     return _taskQueue.add<bool>(popToFuture).then((value) => value ?? false);
   }
 
@@ -851,24 +1034,20 @@ class ThrioNavigatorImplement {
     required String url,
     int excludeIndex = 0,
   }) async {
-    Future<int> removeFuture() async {
-      if (url.isEmpty) {
-        return 0;
-      }
-      var total = 0;
-      var isMatch = false;
-      final all =
-          (await allRoutes(url: url)).where((it) => it.index != excludeIndex);
-      for (final r in all) {
-        isMatch = await _sendChannel.remove(url: r.url, index: r.index);
-        if (isMatch) {
-          total += 1;
-        }
-      }
-      return total;
+    if (url.isEmpty) {
+      return 0;
     }
-
-    return _taskQueue.add<int>(removeFuture).then((value) => value ?? 0);
+    var total = 0;
+    var isMatch = false;
+    final all =
+        (await allRoutes(url: url)).where((it) => it.index != excludeIndex);
+    for (final r in all) {
+      isMatch = await _sendChannel.remove(url: r.url, index: r.index);
+      if (isMatch) {
+        total += 1;
+      }
+    }
+    return total;
   }
 
   Future<bool> remove({

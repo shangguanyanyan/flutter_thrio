@@ -25,37 +25,49 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface NavigatorRouteSettings ()
 
-@property (nonatomic, copy, readwrite) NSString *url;
-
-@property (nonatomic, strong, readwrite, nullable) NSNumber *index;
-
-@property (nonatomic, assign, readwrite) BOOL nested;
-
-@property (nonatomic, copy, readwrite, nullable) id params;
-
 @end
 
 @implementation NavigatorRouteSettings
 
 + (instancetype)settingsWithUrl:(NSString *)url
                           index:(NSNumber *_Nullable)index
+                         params:(id _Nullable)params
+                       animated:(BOOL)animated
                          nested:(BOOL)nested
-                         params:(id _Nullable)params {
-    return [[self alloc] initWithUrl:url index:index nested:nested params:params];
+                        fromURL:(NSString *_Nullable)fromURL
+                        prevURL:(NSString *_Nullable)prevURL
+                       innerURL:(NSString *_Nullable)innerURL {
+    return [[self alloc] initWithUrl:url
+                               index:index
+                              params:params
+                            animated:animated
+                              nested:nested
+                             fromURL:fromURL
+                             prevURL:prevURL
+                            innerURL:innerURL];
 }
 
 - (instancetype)initWithUrl:(NSString *)url
                       index:(NSNumber *_Nullable)index
+                     params:(id _Nullable)params
+                   animated:(BOOL)animated
                      nested:(BOOL)nested
-                     params:(id _Nullable)params {
+                    fromURL:(NSString *_Nullable)fromURL
+                    prevURL:(NSString *_Nullable)prevURL
+                   innerURL:(NSString *_Nullable)innerURL
+{
     NSAssert(url && url.length > 0, @"url must not be null or empty.");
     
     self = [super init];
     if (self) {
         _url = url;
         _index = index;
-        _nested = nested;
         _params = params;
+        _animated = animated;
+        _nested = nested;
+        _fromURL = fromURL;
+        _prevURL = prevURL;
+        _innerURL = innerURL;
     }
     return self;
 }
@@ -65,7 +77,19 @@ NS_ASSUME_NONNULL_BEGIN
     NSNumber *index = [arguments[@"index"] isKindOfClass:NSNull.class] ? nil : arguments[@"index"];
     id params = [arguments[@"params"] isKindOfClass:NSNull.class] ? nil : arguments[@"params"];
     BOOL animated = [arguments[@"animated"] boolValue];
-    return [self settingsWithUrl:url index:index nested:animated params:params];
+    BOOL nested = [arguments[@"isNested"] boolValue];
+    NSString *fromURL = arguments[@"fromURL"];
+    NSString *prevURL = arguments[@"prevURL"];
+    NSString *innerURL = arguments[@"innerURL"];
+    NavigatorRouteSettings *settings = [self settingsWithUrl:url
+                                                       index:index
+                                                      params:params
+                                                    animated:animated
+                                                      nested:nested
+                                                     fromURL:fromURL
+                                                     prevURL:prevURL
+                                                    innerURL:innerURL];
+    return  settings;
 }
 
 - (NSDictionary *)toArguments {
@@ -73,28 +97,46 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (NSDictionary *)toArgumentsWithParams:(id _Nullable)params {
-    return params ? @{
+    NSMutableDictionary * args = @{
         @"url": _url,
         @"index": _index,
-        @"isNested": @(_nested),
-        @"params": params,
-    } : @{
-        @"url": _url,
-        @"index": _index,
-        @"isNested": @(_nested),
-    };
+        @"animated": @(_animated),
+        @"isNested": @(_nested)
+    }.mutableCopy;
+    if (params) {
+        args[@"params"] = params;
+    }
+    if (_fromURL) {
+        args[@"fromURL"] = _fromURL;
+    }
+    if (_prevURL) {
+        args[@"prevURL"] = _prevURL;
+    }
+    if (_innerURL) {
+        args[@"innerURL"] = _innerURL;
+    }
+    return args.copy;
 }
 
 - (NSDictionary *)toArgumentsWithNewUrl:(NSString *)newUrl newIndex:(NSNumber *)newIndex {
-    return @{
+    NSMutableDictionary * args = @{
         @"url": _url,
         @"index": _index,
         @"isNested": @(_nested),
         @"newUrl": newUrl,
         @"newIndex": newIndex,
-    };
+    }.mutableCopy;
+    if (_fromURL) {
+        args[@"fromURL"] = _fromURL;
+    }
+    if (_prevURL) {
+        args[@"prevURL"] = _prevURL;
+    }
+    if (_innerURL) {
+        args[@"innerURL"] = _innerURL;
+    }
+    return args.copy;
 }
-
 
 - (NSString *)name {
     return [NSString stringWithFormat:@"%@ %@", _index == nil ? @0 : _index, _url];

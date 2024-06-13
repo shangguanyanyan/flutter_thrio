@@ -26,6 +26,7 @@
 #import "NavigatorConsts.h"
 #import "NavigatorFlutterEngineFactory.h"
 #import "NavigatorLogger.h"
+#import "NavigatorNavigationController.h"
 #import "NavigatorPageNotifyProtocol.h"
 #import "NavigatorRouteSettings.h"
 #import "ThrioModule+JsonDeserializers.h"
@@ -68,6 +69,9 @@ NS_ASSUME_NONNULL_BEGIN
              animated:(BOOL)animated
        fromEntrypoint:(NSString *_Nullable)fromEntrypoint
                result:(ThrioNumberCallback _Nullable)result
+              fromURL:(NSString *_Nullable)fromURL
+              prevURL:(NSString *_Nullable)prevURL
+             innerURL:(NSString *_Nullable)innerURL
          poppedResult:(ThrioIdCallback _Nullable)poppedResult {
     @synchronized (self) {
         UIViewController *viewController = [self thrio_createNativeViewControllerWithUrl:url params:params];
@@ -78,6 +82,9 @@ NS_ASSUME_NONNULL_BEGIN
                                   animated:animated
                             fromEntrypoint:fromEntrypoint
                                     result:result
+                                   fromURL:fromURL
+                                   prevURL:prevURL
+                                  innerURL:innerURL
                               poppedResult:poppedResult];
         } else {
             NSString *entrypoint = kNavigatorDefaultEntrypoint;
@@ -102,6 +109,9 @@ NS_ASSUME_NONNULL_BEGIN
                                              animated:animated
                                        fromEntrypoint:fromEntrypoint
                                                result:resultBlock
+                                              fromURL:fromURL
+                                              prevURL:prevURL
+                                             innerURL:innerURL
                                          poppedResult:poppedResult];
             } else {
                 __weak typeof(self) weakself = self;
@@ -115,6 +125,9 @@ NS_ASSUME_NONNULL_BEGIN
                                                 animated:animated
                                           fromEntrypoint:fromEntrypoint
                                                   result:result
+                                                 fromURL:fromURL
+                                                 prevURL:prevURL
+                                                innerURL:innerURL
                                             poppedResult:poppedResult];
                 };
                 [NavigatorFlutterEngineFactory.shared startupWithEntrypoint:entrypoint readyBlock:readyBlock];
@@ -517,6 +530,16 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)thrio_pushViewController:(UIViewController *)viewController animated:(BOOL)animated {
+
+    //if (![self.navigationController isKindOfClass:NavigatorNavigationController.class]) {
+    //    [self thrio_pushViewController:viewController animated:animated];
+    //    return;
+    //}
+    //if (!self.topViewController || !self.topViewController.thrio_hidesNavigationBar_ ||
+    //    ![viewController.thrio_hidesNavigationBar_ isEqualToNumber:self.topViewController.thrio_hidesNavigationBar_]) {
+    //    [self setNavigationBarHidden:viewController.thrio_hidesNavigationBar_.boolValue animated:NO];
+    // }
+
     if (!self.topViewController || !self.topViewController.thrio_hidesNavigationBar_ || ![viewController.thrio_hidesNavigationBar_ isEqual:self.topViewController.thrio_hidesNavigationBar_]) {
         [self setNavigationBarHidden:viewController.thrio_hidesNavigationBar_.boolValue];
     }
@@ -549,7 +572,7 @@ NS_ASSUME_NONNULL_BEGIN
                     [NavigatorFlutterEngineFactory.shared popViewController:(NavigatorFlutterViewController *)self.topViewController];
                 }
                 // 判断前一个页面导航栏是否需要切换
-                if (self.navigationBarHidden != vc.thrio_hidesNavigationBar_.boolValue) {
+                if ([self.navigationController isKindOfClass:NavigatorNavigationController.class] && self.navigationBarHidden != vc.thrio_hidesNavigationBar_.boolValue) {
                     [self setNavigationBarHidden:vc.thrio_hidesNavigationBar_.boolValue];
                 }
             }
@@ -587,7 +610,7 @@ NS_ASSUME_NONNULL_BEGIN
                         poppedVC = [strongSelf thrio_popViewControllerAnimated:animated];
                     }
                     // 判断前一个页面导航栏是否需要切换
-                    if (previousVC && strongSelf.navigationBarHidden != previousVC.thrio_hidesNavigationBar_.boolValue) {
+                    if ([strongSelf.navigationController isKindOfClass:NavigatorNavigationController.class] && previousVC && strongSelf.navigationBarHidden != previousVC.thrio_hidesNavigationBar_.boolValue) {
                         [strongSelf setNavigationBarHidden:previousVC.thrio_hidesNavigationBar_.boolValue];
                     }
                     
@@ -615,7 +638,7 @@ NS_ASSUME_NONNULL_BEGIN
         if ([previousVC isKindOfClass:NavigatorFlutterViewController.class]) {
             [NavigatorFlutterEngineFactory.shared pushViewController:(NavigatorFlutterViewController *)previousVC];
         }
-
+        
         UIViewController *vc;
         if (animated) {
             [CATransaction begin];
@@ -642,7 +665,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (NSArray<__kindof UIViewController *> *_Nullable)thrio_popToViewController:(UIViewController *)viewController
                                                                     animated:(BOOL)animated {
-    if (![viewController.thrio_hidesNavigationBar_ isEqualToNumber:self.topViewController.thrio_hidesNavigationBar_]) {
+    if ([self isKindOfClass:NavigatorNavigationController.class] &&
+        ![viewController.thrio_hidesNavigationBar_ isEqualToNumber:self.topViewController.thrio_hidesNavigationBar_]) {
         [self setNavigationBarHidden:viewController.thrio_hidesNavigationBar_.boolValue];
     }
     
@@ -667,14 +691,16 @@ NS_ASSUME_NONNULL_BEGIN
 }
 
 - (void)thrio_setViewControllers:(NSArray<UIViewController *> *)viewControllers {
-    if (viewControllers.count > 0) {
-        UIViewController *willPopVC = self.topViewController;
-        UIViewController *willShowVC = viewControllers.lastObject;
-        if (!willShowVC.thrio_hidesNavigationBar_) {
-            willShowVC.thrio_hidesNavigationBar_ = @YES;
-        }
-        if (![willPopVC.thrio_hidesNavigationBar_ isEqualToNumber:willShowVC.thrio_hidesNavigationBar_]) {
-            [self setNavigationBarHidden:willShowVC.thrio_hidesNavigationBar_.boolValue];
+    if ([self isKindOfClass:NavigatorNavigationController.class]) {
+        if (viewControllers.count > 0) {
+            UIViewController *willPopVC = self.topViewController;
+            UIViewController *willShowVC = viewControllers.lastObject;
+            if (!willShowVC.thrio_hidesNavigationBar_) {
+                willShowVC.thrio_hidesNavigationBar_ = @YES;
+            }
+            if (![willPopVC.thrio_hidesNavigationBar_ isEqualToNumber:willShowVC.thrio_hidesNavigationBar_]) {
+                [self setNavigationBarHidden:willShowVC.thrio_hidesNavigationBar_.boolValue];
+            }
         }
     }
     
@@ -702,7 +728,7 @@ NS_ASSUME_NONNULL_BEGIN
                     if (![viewController isKindOfClass:NavigatorFlutterViewController.class]) {
                         [NavigatorFlutterEngineFactory.shared popViewController:(NavigatorFlutterViewController *)strongSelf.thrio_popingViewController];
                     }
-                    if (strongSelf.navigationBarHidden != viewController.thrio_hidesNavigationBar_.boolValue) {
+                    if ([strongSelf.navigationController isKindOfClass:NavigatorNavigationController.class] && strongSelf.navigationBarHidden != viewController.thrio_hidesNavigationBar_.boolValue) {
                         [strongSelf setNavigationBarHidden:viewController.thrio_hidesNavigationBar_.boolValue];
                     }
                 }
@@ -745,6 +771,9 @@ NS_ASSUME_NONNULL_BEGIN
                         animated:(BOOL)animated
                   fromEntrypoint:(NSString *_Nullable)fromEntrypoint
                           result:(ThrioNumberCallback _Nullable)result
+                         fromURL:(NSString *_Nullable)fromURL
+                         prevURL:(NSString *_Nullable)prevURL
+                        innerURL:(NSString *_Nullable)innerURL
                     poppedResult:(ThrioIdCallback _Nullable)poppedResult {
     if (viewController) {
         NavigatorPageRoute *lastRoute = [ThrioNavigator getLastRouteByUrl:url];
@@ -763,7 +792,11 @@ NS_ASSUME_NONNULL_BEGIN
             if (result) {
                 result(idx);
             }
-        } poppedResult:poppedResult];
+        }
+                              fromURL:fromURL
+                              prevURL:prevURL
+                             innerURL:innerURL
+                         poppedResult:poppedResult];
     }
 }
 
