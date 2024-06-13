@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_thrio/flutter_thrio.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../route.dart';
 import '../../../types/people.dart';
@@ -40,6 +41,9 @@ class _HomePageState extends State<HomePage>
     super.initState();
     if (mounted) {
       WidgetsBinding.instance.addObserver(this);
+      widget.moduleContext.onStringKeyBiz1.listen((i) {
+        ThrioLogger.v('onIntKeyRootModule value is $i');
+      });
     }
   }
 
@@ -61,31 +65,32 @@ class _HomePageState extends State<HomePage>
   bool get wantKeepAlive => true;
 
   @override
-  void didAppear(final RouteSettings routeSettings) {
-    ThrioLogger.d('flutter1 didAppear: $routeSettings ');
+  void didAppear(RouteSettings routeSettings) {
+    super.didAppear(routeSettings);
   }
 
   @override
-  void didDisappear(final RouteSettings routeSettings) {
-    ThrioLogger.d('flutter1 didDisappear: $routeSettings ');
+  void didDisappear(RouteSettings routeSettings) {
+    super.didDisappear(routeSettings);
   }
 
   @override
-  Widget build(final BuildContext context) {
+  Widget build(BuildContext context) {
     super.build(context);
     return NavigatorRoutePush(
-      urls: [biz.biz2.flutter2.url],
-      onPush: (final settings, {final animated = true}) async {
+      onPush: (settings, {animated = true}) async {
         // root.biz1.flutter1.home.replace(newUrl: root.biz2.flutter2.url);
-        ThrioLogger.d('page2 onPush');
+        if (settings.url == biz.biz2.flutter2.url) {
+          ThrioLogger.d('page2 onPush');
+        }
         return NavigatorRoutePushHandleType.none;
       },
       child: NavigatorPageNotify(
           name: 'all_page_notify',
-          onPageNotify: (final params) =>
+          onPageNotify: (params) =>
               ThrioLogger.v('flutter1 receive all page notify:$params'),
           child: Flutter1Notify(
-              onNotify: ({final intValue = 0}) =>
+              onNotify: ({intValue = 0}) =>
                   ThrioLogger.v('flutter1 receive notify:$intValue'),
               child: Scaffold(
                   appBar: PreferredSize(
@@ -122,7 +127,7 @@ class _HomePageState extends State<HomePage>
                             width: 100,
                             child: TextField(
                                 controller: _inputController,
-                                textInputAction: TextInputAction.search,
+                                textInputAction: TextInputAction.done,
                                 // onSubmitted: onSubmitted,
                                 decoration: const InputDecoration(
                                   hintText: 'hintText',
@@ -153,6 +158,8 @@ class _HomePageState extends State<HomePage>
                                   widget.moduleContext.intKeyRootModule;
                               ThrioLogger.v('intKeyRootModule value is $value');
                             }
+
+                            widget.moduleContext.setStringKeyBiz1('value');
 
                             final value =
                                 widget.moduleContext.get('people_from_native');
@@ -212,7 +219,8 @@ class _HomePageState extends State<HomePage>
                               url:
                                   '${biz.biz2.flutter2.url}?fewfew=2131&fwe=1&&',
                               params: People(name: '大宝剑', age: 0, sex: 'x'),
-                              result: (final index) {
+                              animated: false,
+                              result: (index) {
                                 ThrioLogger.v('test_async_queue: push $index');
                               },
                             );
@@ -247,7 +255,7 @@ class _HomePageState extends State<HomePage>
                           onTap: () async {
                             final params = await ThrioNavigator.push(
                               url: '/biz1/native1',
-                              params: People(name: '大宝剑', age: 10, sex: 'x'),
+                              params: People(name: '大宝剑', sex: 'x'),
                             );
                             ThrioLogger.v(
                                 '/biz1/native1 poppedResult call params:$params');
@@ -323,27 +331,24 @@ class _HomePageState extends State<HomePage>
                                     fontSize: 22, color: Colors.black),
                               )),
                         ),
-                        NavigatorPageLifecycle(
-                            didAppear: (final settings) {
-                              ThrioLogger.v('home  didAppear -> $settings');
-                            },
-                            didDisappear: (final settings) {
-                              ThrioLogger.v('home  didDisappear -> $settings');
-                            },
-                            child: StreamBuilder<Object>(
-                                stream:
-                                    widget.moduleContext.on('stringKeyBiz1'),
-                                builder: (final context, final snapshot) =>
-                                    Container(
-                                        padding: const EdgeInsets.all(8),
-                                        margin: const EdgeInsets.all(8),
-                                        color: Colors.grey,
-                                        child: Text(
-                                          '${snapshot.data}',
-                                          style: const TextStyle(
-                                              fontSize: 22,
-                                              color: Colors.black),
-                                        ))))
+                        InkWell(
+                          onTap: () async {
+                            final picker = ImagePicker();
+
+                            final images = await picker.pickMultiImage();
+                            if (images.isEmpty) {}
+                            debugPrint('images: ${images.length}');
+                          },
+                          child: Container(
+                              padding: const EdgeInsets.all(8),
+                              margin: const EdgeInsets.all(8),
+                              color: Colors.grey,
+                              child: const Text(
+                                'pick image',
+                                style: TextStyle(
+                                    fontSize: 22, color: Colors.black),
+                              )),
+                        ),
                       ]),
                     ),
                   )))),

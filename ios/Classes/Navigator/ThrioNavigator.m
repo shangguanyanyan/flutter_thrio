@@ -43,8 +43,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:nil
           animated:YES
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:nil
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:nil];
 }
 
@@ -53,8 +55,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:nil
           animated:YES
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:result
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:nil];
 }
 
@@ -63,8 +67,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:nil
           animated:YES
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:nil
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:poppedResult];
 }
 
@@ -73,8 +79,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:params
           animated:YES
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:nil
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:nil];
 }
 
@@ -85,8 +93,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:params
           animated:YES
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:result
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:nil];
 }
 
@@ -97,8 +107,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:params
           animated:YES
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:nil
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:poppedResult];
 }
 
@@ -110,8 +122,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:params
           animated:YES
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:result
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:poppedResult];
 }
 
@@ -120,8 +134,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:nil
           animated:animated
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:nil
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:nil];
 }
 
@@ -132,8 +148,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:nil
           animated:animated
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:result
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:nil];
 }
 
@@ -144,8 +162,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:nil
           animated:animated
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:nil
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:poppedResult];
 }
 
@@ -157,8 +177,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:nil
           animated:animated
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:result
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:poppedResult];
 }
 
@@ -169,8 +191,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:params
           animated:animated
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:nil
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:nil];
 }
 
@@ -182,8 +206,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:params
           animated:animated
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:result
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:nil];
 }
 
@@ -195,8 +221,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:params
           animated:animated
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:nil
+           fromURL:nil
+           prevURL:nil
+          innerURL:nil
       poppedResult:poppedResult];
 }
 
@@ -204,13 +232,16 @@ NS_ASSUME_NONNULL_BEGIN
           params:(id)params
         animated:(BOOL)animated
           result:(ThrioNumberCallback)result
+         fromURL:(NSString *_Nullable)fromURL
     poppedResult:(ThrioIdCallback)poppedResult {
     [self _pushUrl:url
             params:params
           animated:animated
     fromEntrypoint:nil
-        fromPageId:kNavigatorRoutePageIdNone
             result:result
+           fromURL:fromURL
+           prevURL:nil
+          innerURL:nil
       poppedResult:poppedResult];
 }
 
@@ -316,6 +347,38 @@ NS_ASSUME_NONNULL_BEGIN
          animated:(BOOL)animated
            result:(ThrioBoolCallback)result {
     [self _popParams:params animated:animated result:result];
+}
+
+#pragma mark - popFlutter methods
+
++ (void)popFlutter {
+    [self _popFlutterParams:nil animated:YES result:nil];
+}
+
++ (void)popFlutterParams:(id)params {
+    [self _popFlutterParams:params animated:YES result:nil];
+}
+
++ (void)popFlutterAnimated:(BOOL)animated {
+    [self _popFlutterParams:nil animated:animated result:nil];
+}
+
++ (void)popFlutterParams:(id)params animated:(BOOL)animated {
+    [self _popFlutterParams:params animated:animated result:nil];
+}
+
++ (void)popFlutterAnimated:(BOOL)animated result:(ThrioBoolCallback)result {
+    [self _popFlutterParams:nil animated:animated result:nil];
+}
+
++ (void)popFlutterParams:(id)params result:(ThrioBoolCallback)result {
+    [self _popFlutterParams:params animated:YES result:result];
+}
+
++ (void)popFlutterParams:(id)params
+                animated:(BOOL)animated
+                  result:(ThrioBoolCallback)result {
+    [self _popFlutterParams:params animated:animated result:result];
 }
 
 #pragma mark - popTo methods
@@ -464,8 +527,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 + (FlutterEngine *)getEngineByViewContontroller:(NavigatorFlutterViewController *)viewController
                                  withEntrypoint:(NSString *)entrypoint {
-    return [NavigatorFlutterEngineFactory.shared getEngineByPageId:viewController.pageId
-                                                    withEntrypoint:entrypoint].flutterEngine;
+    return [NavigatorFlutterEngineFactory.shared getEngineByEntrypoint:entrypoint].flutterEngine;
+}
+
++ (void)pushUrl:(nonnull NSString *)url params:(nonnull id)params animated:(BOOL)animated result:(nonnull ThrioNumberCallback)result poppedResult:(nonnull ThrioIdCallback)poppedResult {
 }
 
 @end

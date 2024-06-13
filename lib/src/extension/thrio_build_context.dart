@@ -19,6 +19,8 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
+// ignore_for_file: avoid_positional_boolean_parameters
+
 import 'package:flutter/widgets.dart';
 
 import '../navigator/navigator_route.dart';
@@ -68,13 +70,13 @@ extension ThrioBuildContext on BuildContext {
   /// ```
   ///
   Widget showPopAwareWidget(
-    final Widget trueWidget, {
-    final Widget falseWidget = const SizedBox(),
-    final void Function(bool)? canPopResult,
+    Widget trueWidget, {
+    Widget falseWidget = const SizedBox(),
+    void Function(bool)? canPopResult,
   }) =>
       FutureBuilder<bool>(
           future: _isInitialRoute(),
-          builder: (final context, final snapshot) {
+          builder: (context, snapshot) {
             canPopResult?.call(snapshot.data != true);
             if (snapshot.data == true) {
               return falseWidget;

@@ -61,22 +61,30 @@ NS_ASSUME_NONNULL_BEGIN
           params:(id _Nullable)params
         animated:(BOOL)animated
   fromEntrypoint:fromEntrypoint
-      fromPageId:(NSUInteger)fromPageId
           result:(ThrioNumberCallback _Nullable)result
+         fromURL:(NSString *_Nullable)fromURL
+         prevURL:(NSString *_Nullable)prevURL
+        innerURL:(NSString *_Nullable)innerURL
     poppedResult:(ThrioIdCallback _Nullable)poppedResult
 {
     UINavigationController *nvc = self.navigationController;
     [self.navigationControllers addAndRemoveObject:nvc];
+    if (!prevURL) {
+        prevURL = [ThrioNavigator lastRoute].settings.url;
+    }
     [nvc thrio_pushUrl:url
                 params:params
               animated:animated
         fromEntrypoint:fromEntrypoint
-            fromPageId:fromPageId
                 result:^(NSNumber *idx) {
         if (result) {
             result(idx);
         }
-    } poppedResult:poppedResult];
+    }
+               fromURL:fromURL
+               prevURL:prevURL
+              innerURL:innerURL
+          poppedResult:poppedResult];
 }
 
 + (void)_notifyUrl:(NSString *_Nullable)url
@@ -105,9 +113,17 @@ NS_ASSUME_NONNULL_BEGIN
                                         result:result];
 }
 
++ (void)_popFlutterParams:(id _Nullable)params
+                 animated:(BOOL)animated
+                   result:(ThrioBoolCallback _Nullable)result {
+    [self.navigationController thrio_popFlutterParams:params
+                                             animated:animated
+                                               result:result];
+}
+
 + (void)_maybePopParams:(id _Nullable)params
-          animated:(BOOL)animated
-            result:(ThrioBoolCallback _Nullable)result {
+               animated:(BOOL)animated
+                 result:(ThrioBoolCallback _Nullable)result {
     [self.navigationController thrio_maybePopParams:params
                                            animated:animated
                                              result:result];

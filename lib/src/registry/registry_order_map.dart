@@ -23,55 +23,59 @@ import 'package:flutter/foundation.dart';
 import '../extension/thrio_iterable.dart';
 
 class RegistryOrderMap<K, V> {
-  final _maps = <MapEntry<K, V>>[];
+  final _list = <MapEntry<K, V>>[];
 
-  VoidCallback registry(final K key, final V value) {
+  VoidCallback registry(K key, V value) {
     assert(key != null, 'key must not be null.');
     assert(value != null, 'value must not be null.');
     final item = MapEntry(key, value);
-    _maps.add(item);
+    _list.add(item);
     return () {
-      _maps.remove(item);
+      _list.remove(item);
     };
   }
 
-  Iterable<K> get keys => _maps.map((final it) => it.key);
+  int get length => _list.length;
 
-  Iterable<V> get values => _maps.map((final it) => it.value);
+  MapEntry<K, V> elementAt(int index) => _list.elementAt(index);
+
+  Iterable<K> get keys => _list.map((it) => it.key);
+
+  Iterable<V> get values => _list.map((it) => it.value);
 
   V first([final K? key]) => key == null
-      ? _maps.first.value
-      : _maps.firstWhere((final it) => it.key == key).value;
+      ? _list.first.value
+      : _list.firstWhere((it) => it.key == key).value;
 
   V? firstOrNull([final K? key]) => key == null
-      ? _maps.firstOrNull?.value
-      : _maps.firstWhereOrNull((final it) => it.key == key)?.value;
+      ? _list.firstOrNull?.value
+      : _list.firstWhereOrNull((it) => it.key == key)?.value;
 
-  V firstWhere(final bool Function(K k) predicate) =>
-      _maps.firstWhere((final it) => predicate(it.key)).value;
+  V firstWhere(bool Function(K k) predicate) =>
+      _list.firstWhere((it) => predicate(it.key)).value;
 
-  V? firstWhereOrNull(final bool Function(K k) predicate) =>
-      _maps.firstWhereOrNull((final it) => predicate(it.key))?.value;
+  V? firstWhereOrNull(bool Function(K k) predicate) =>
+      _list.firstWhereOrNull((it) => predicate(it.key))?.value;
 
-  Iterable<V> where(final bool Function(K k) predicate) =>
-      _maps.where((final it) => predicate(it.key)).map((final it) => it.value);
+  Iterable<V> where(bool Function(K k) predicate) =>
+      _list.where((it) => predicate(it.key)).map((it) => it.value);
 
   V last([final K? key]) => key == null
-      ? _maps.last.value
-      : _maps.lastWhere((final it) => it.key == key).value;
+      ? _list.last.value
+      : _list.lastWhere((it) => it.key == key).value;
 
   V? lastOrNull([final K? key]) => key == null
-      ? _maps.lastOrNull?.value
-      : _maps.lastWhereOrNull((final it) => it.key == key)?.value;
+      ? _list.lastOrNull?.value
+      : _list.lastWhereOrNull((it) => it.key == key)?.value;
 
-  V lastWhere(final bool Function(K k) predicate) =>
-      _maps.lastWhere((final it) => predicate(it.key)).value;
+  V lastWhere(bool Function(K k) predicate) =>
+      _list.lastWhere((it) => predicate(it.key)).value;
 
-  V? lastWhereOrNull(final bool Function(K k) predicate) =>
-      _maps.lastWhereOrNull((final it) => predicate(it.key))?.value;
+  V? lastWhereOrNull(bool Function(K k) predicate) =>
+      _list.lastWhereOrNull((it) => predicate(it.key))?.value;
 
-  void clear() => _maps.clear();
+  void clear() => _list.clear();
 
-  Iterable<V> operator [](final K key) =>
-      _maps.where((final it) => it.key == key).map((final it) => it.value);
+  Iterable<V> operator [](K key) =>
+      _list.where((it) => it.key == key).map((it) => it.value);
 }

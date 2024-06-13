@@ -36,8 +36,10 @@ NS_ASSUME_NONNULL_BEGIN
             params:(id _Nullable)params
           animated:(BOOL)animated
     fromEntrypoint:fromEntrypoint
-        fromPageId:(NSUInteger)fromPageId
             result:(ThrioNumberCallback _Nullable)result
+          fromURL:(NSString *_Nullable)fromURL
+           prevURL:(NSString *_Nullable)prevURL
+          innerURL:(NSString *_Nullable)innerURL
       poppedResult:(ThrioIdCallback _Nullable)poppedResult;
 
 + (void)_notifyUrl:(NSString *_Nullable)url
@@ -53,6 +55,10 @@ NS_ASSUME_NONNULL_BEGIN
 + (void)_popParams:(id _Nullable)params
           animated:(BOOL)animated
             result:(ThrioBoolCallback _Nullable)result;
+
++ (void)_popFlutterParams:(id _Nullable)params
+                 animated:(BOOL)animated
+                   result:(ThrioBoolCallback _Nullable)result;
 
 + (void)_popToUrl:(NSString *)url
             index:(NSNumber *_Nullable)index

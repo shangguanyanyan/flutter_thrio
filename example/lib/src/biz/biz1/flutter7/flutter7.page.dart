@@ -31,31 +31,23 @@ class _Flutter7PageState extends State<Flutter7Page>
       initialIndex: Random.secure().nextInt(4), length: 5, vsync: this);
 
   @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
   void dispose() {
     ThrioLogger.d('page7 dispose: ${widget.settings.index}');
     super.dispose();
   }
 
   @override
-  void didAppear(final RouteSettings routeSettings) {
-    Future.delayed(const Duration(seconds: 1), () {
-      setState(() {});
-    });
-    ThrioLogger.d('flutter7 didAppear: $routeSettings');
+  void didAppear(RouteSettings routeSettings) {
+    super.didAppear(routeSettings);
   }
 
   @override
-  void didDisappear(final RouteSettings routeSettings) {
-    ThrioLogger.d('flutter7 didDisappear: $routeSettings');
+  void didDisappear(RouteSettings routeSettings) {
+    super.didDisappear(routeSettings);
   }
 
   @override
-  Widget build(final BuildContext context) {
+  Widget build(BuildContext context) {
     super.build(context);
     return Scaffold(
         resizeToAvoidBottomInset: true,
@@ -81,10 +73,10 @@ class _Flutter7PageState extends State<Flutter7Page>
           ),
         ),
         body: NavigatorPageLifecycle(
-            didAppear: (final settings) {
+            didAppear: (settings) {
               ThrioLogger.v('page7 didAppear -> $settings');
             },
-            didDisappear: (final settings) {
+            didDisappear: (settings) {
               ThrioLogger.v('page7 didDisappear -> $settings');
             },
             child: NavigatorTabBarView(

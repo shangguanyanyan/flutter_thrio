@@ -23,13 +23,26 @@
 
 package io.flutter.embedding.android
 
+import android.content.Context
 import android.content.pm.PackageManager
+import com.foxsofter.flutter_thrio.extension.getFieldNullableValue
+import com.foxsofter.flutter_thrio.extension.setSuperFieldValue
 import com.foxsofter.flutter_thrio.navigator.NavigationController
 import com.foxsofter.flutter_thrio.navigator.ThrioNavigator
+import io.flutter.Log
 
-open class ThrioFlutterFragment : FlutterFragment() {
+class ThrioFlutterFragment : FlutterFragment() {
     companion object {
+        const val TAG = "ThrioFlutterFragment"
         var isInitialUrlPushed = false
+    }
+
+    internal class HookDelegateFactory : FlutterActivityAndFragmentDelegate.DelegateFactory {
+        override fun createDelegate(host: FlutterActivityAndFragmentDelegate.Host): FlutterActivityAndFragmentDelegate {
+            val d = ThrioFlutterViewDelegate(host)
+            Log.i("ThrioFlutterViewDelegate", "createDelegate = ${d.hashCode()}")
+            return d
+        }
     }
 
     val engine: com.foxsofter.flutter_thrio.navigator.FlutterEngine?
@@ -41,6 +54,24 @@ open class ThrioFlutterFragment : FlutterFragment() {
             return activity.engine
         }
 
+    override fun onStart() {
+        if (delegate != null) {
+            val prevDelegate =
+                flutterEngine!!.activityControlSurface.getFieldNullableValue<ThrioFlutterViewDelegate>(
+                    "exclusiveActivity"
+                )
+            if (prevDelegate == null || delegate != prevDelegate) {
+                (delegate!! as ThrioFlutterViewDelegate).reattach()
+            }
+        }
+        super.onStart()
+    }
+
+    override fun onAttach(context: Context) {
+        setSuperFieldValue("delegateFactory", HookDelegateFactory())
+        super.onAttach(context)
+    }
+
     override fun onBackPressed() {
         val activity = requireActivity()
         return activity.onBackPressed()
@@ -49,11 +80,12 @@ open class ThrioFlutterFragment : FlutterFragment() {
     override fun onFlutterUiDisplayed() {
         super.onFlutterUiDisplayed()
 
-        val activity = requireActivity()
         if (!isInitialUrlPushed && initialUrl?.isNotEmpty() == true) {
             isInitialUrlPushed = true
             NavigationController.Push.push(initialUrl!!, null, false) {}
         } else {
+            val activity = requireActivity()
+            Log.v(TAG, "onFlutterUiDisplayed ${hashCode()}, activity: ${activity.hashCode()}")
             NavigationController.Push.doPush(activity)
         }
     }
@@ -73,7 +105,7 @@ open class ThrioFlutterFragment : FlutterFragment() {
 
     private var _initialUrl: String? = null
 
-    protected open val initialUrl: String?
+    private val initialUrl: String?
         get() {
             if (_initialUrl == null) {
                 readInitialUrl()

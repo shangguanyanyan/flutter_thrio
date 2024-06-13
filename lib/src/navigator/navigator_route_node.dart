@@ -44,8 +44,8 @@ class NavigatorRouteNode {
   }
 
   Future<bool> notify<TParams>(
-    final String name, {
-    final TParams? params,
+    String name, {
+    TParams? params,
   }) =>
       ThrioNavigator.notify(
         url: url,
@@ -54,31 +54,28 @@ class NavigatorRouteNode {
       );
 }
 
-void _initUrl(final NavigatorRouteNode routeNode) {
+void _initUrl(NavigatorRouteNode routeNode) {
   if (routeNode._url == null) {
-    final pathComs = <String>['/${routeNode.name}'];
-    var parentRoute = routeNode.parent;
-    while (parentRoute != _emptyRouteNode) {
-      if (parentRoute.name.isNotEmpty) {
-        pathComs.add('/${parentRoute.name}');
-      }
-      parentRoute = parentRoute.parent;
+    var parentUrl = '';
+    final parentRoute = routeNode.parent;
+    if (parentRoute != _emptyRouteNode && parentRoute.name.isNotEmpty) {
+      parentUrl = parentRoute.url;
     }
-    routeNode._url = pathComs.reversed.join();
+    routeNode._url = '$parentUrl/${routeNode.name}';
   }
 }
 
 class NavigatorRouteLeaf extends NavigatorRouteNode {
   NavigatorRouteLeaf(super.parent);
 
-  Future<bool> popTo({final bool animated = true}) =>
+  Future<bool> popTo({bool animated = true}) =>
       ThrioNavigator.popTo(url: url, animated: animated);
 
-  Future<bool> remove({final bool animated = true}) =>
+  Future<bool> remove({bool animated = true}) =>
       ThrioNavigator.remove(url: url, animated: animated);
 
   Future<int> replace({
-    required final String newUrl,
+    required String newUrl,
   }) =>
       ThrioNavigator.replace(
         url: url,
@@ -95,7 +92,7 @@ class EmptyNavigatorRoute implements NavigatorRouteNode {
   NavigatorRouteNode get parent =>
       throw UnimplementedError('Methods of this instance should not be called');
   @override
-  set parent(final NavigatorRouteNode parent) =>
+  set parent(NavigatorRouteNode parent) =>
       throw UnimplementedError('Methods of this instance should not be called');
 
   @override
@@ -107,9 +104,9 @@ class EmptyNavigatorRoute implements NavigatorRouteNode {
 
   @override
   Future<bool> notify<TParams>(
-    final String name, {
-    final TParams? params,
-    final int index = 0,
+    String name, {
+    TParams? params,
+    int index = 0,
   }) =>
       throw UnimplementedError('Methods of this instance should not be called');
 

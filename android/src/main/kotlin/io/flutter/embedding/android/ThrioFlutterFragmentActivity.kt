@@ -24,24 +24,31 @@
 package io.flutter.embedding.android
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import com.foxsofter.flutter_thrio.BooleanCallback
 import com.foxsofter.flutter_thrio.IntCallback
-import com.foxsofter.flutter_thrio.extension.getEntrypoint
-import com.foxsofter.flutter_thrio.extension.getFromEntrypoint
-import com.foxsofter.flutter_thrio.extension.getFromPageId
-import com.foxsofter.flutter_thrio.extension.getPageId
+import com.foxsofter.flutter_thrio.extension.*
 import com.foxsofter.flutter_thrio.navigator.*
+import io.flutter.Log
 import io.flutter.embedding.android.FlutterActivityLaunchConfigs.BackgroundMode
 import io.flutter.embedding.engine.FlutterEngine
 
-open class ThrioFlutterFragmentActivity : FlutterFragmentActivity(), ThrioFlutterActivityBase {
+open class ThrioFlutterFragmentActivity : FlutterFragmentActivity(), ThrioFlutterActivityBase,
+    ExclusiveAppComponent<Activity> {
+
+    companion object {
+        const val TAG = "ThrioFlutterFragmentActivity"
+    }
 
     private val activityDelegate by lazy { ThrioFlutterActivityDelegate(this) }
 
     override val engine: com.foxsofter.flutter_thrio.navigator.FlutterEngine?
         get() = activityDelegate.engine
+
+    private val flutterFragment
+        get() = getSuperFieldValue<FlutterFragment>("flutterFragment")
 
     override fun provideFlutterEngine(context: Context): FlutterEngine? =
         activityDelegate.provideFlutterEngine(context)
@@ -50,6 +57,16 @@ open class ThrioFlutterFragmentActivity : FlutterFragmentActivity(), ThrioFlutte
         activityDelegate.cleanUpFlutterEngine(flutterEngine)
 
     override fun onBackPressed() = activityDelegate.onBackPressed()
+
+    override fun onResume() {
+        super.onResume()
+        Log.v(TAG, "onResume ${hashCode()}")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.v(TAG, "onStop ${hashCode()}")
+    }
 
     override fun shouldDestroyEngineWithHost(): Boolean =
         activityDelegate.shouldDestroyEngineWithHost()
@@ -80,18 +97,14 @@ open class ThrioFlutterFragmentActivity : FlutterFragmentActivity(), ThrioFlutte
 
     @SuppressLint("VisibleForTests")
     override fun createFlutterFragment(): FlutterFragment {
-        val pageId = intent.getPageId()
-        if (pageId == NAVIGATION_ROUTE_PAGE_ID_NONE) throw IllegalStateException("pageId must not be null")
-        val holder = PageRoutes.lastRouteHolder(pageId)
-            ?: throw throw IllegalStateException("holder must not be null")
-
+        val entrypoint = intent.getEntrypoint()
         val backgroundMode = backgroundMode
         val renderMode = renderMode
         val transparencyMode =
             if (backgroundMode == BackgroundMode.opaque) TransparencyMode.opaque else TransparencyMode.transparent
         val shouldDelayFirstAndroidViewDraw = renderMode == RenderMode.surface
         return FlutterFragment.NewEngineFragmentBuilder(ThrioFlutterFragment::class.java)
-            .dartEntrypoint(holder.entrypoint)
+            .dartEntrypoint(entrypoint)
             .handleDeeplinking(shouldHandleDeeplinking())
             .renderMode(renderMode)
             .transparencyMode(transparencyMode)
@@ -113,5 +126,13 @@ open class ThrioFlutterFragmentActivity : FlutterFragmentActivity(), ThrioFlutte
         val settingsData = this.intent.getSerializableExtra(NAVIGATION_ROUTE_SETTINGS_KEY)
         intent.putExtra(NAVIGATION_ROUTE_SETTINGS_KEY, settingsData)
         super.setIntent(intent)
+    }
+
+    override fun detachFromFlutterEngine() {
+
+    }
+
+    override fun getAppComponent(): Activity {
+        return this
     }
 }

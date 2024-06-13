@@ -1,6 +1,6 @@
 // The MIT License (MIT)
 //
-// Copyright (c) 2022 foxsofter
+// Copyright (c) 2020 foxsofter
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
 // copy of this software and associated documentation files (the "Software"),
@@ -19,18 +19,28 @@
 // FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
 // IN THE SOFTWARE.
 
-#import <Foundation/Foundation.h>
+import 'package:flutter/foundation.dart';
+import 'package:flutter_jsonable/flutter_jsonable.dart';
 
-NS_ASSUME_NONNULL_BEGIN
+import 'thrio_module.dart';
 
-@protocol NavigatorFlutterEngineIdentifier <NSObject>
+mixin ModuleJsonable on ThrioModule {
+  /// Get jsonable by type string.
+  ///
+  @protected
+  Jsonable<dynamic>? getJsonable(String typeString) =>
+      jsonableRegistry.getByTypeName(typeString);
 
-@required
+  /// A function for register a jsonable.
+  ///
+  @protected
+  void onJsonableRegister(ModuleContext moduleContext) {}
 
-@property (nonatomic, copy, readonly) NSString *entrypoint;
-
-@property (nonatomic, assign, readonly) NSUInteger pageId;
-
-@end
-
-NS_ASSUME_NONNULL_END
+  /// Register a jsonable.
+  ///
+  /// Unregistry by calling the return value `VoidCallback`.
+  ///
+  @protected
+  VoidCallback registerJsonable<T>(Jsonable<dynamic> jsonable) =>
+      jsonableRegistry.registerJsonable(jsonable);
+}

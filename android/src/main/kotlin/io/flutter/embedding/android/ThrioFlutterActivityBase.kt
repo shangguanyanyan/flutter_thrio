@@ -29,6 +29,7 @@ import com.foxsofter.flutter_thrio.IntCallback
 import io.flutter.embedding.engine.FlutterEngine
 
 interface ThrioFlutterActivityBase {
+
     val engine: com.foxsofter.flutter_thrio.navigator.FlutterEngine?
 
     fun provideFlutterEngine(context: Context): FlutterEngine?
@@ -38,8 +39,6 @@ interface ThrioFlutterActivityBase {
     fun onBackPressed()
 
     fun shouldMoveToBack(): Boolean = true
-
-    fun shouldDestroyEngineWithHost(): Boolean
 
     fun onPush(arguments: Map<String, Any?>?, result: BooleanCallback)
 

@@ -42,6 +42,8 @@ typedef NavigatorRouteCustomHandler = FutureOr<TPopParams?>
   TParams? params,
   bool animated,
   NavigatorIntCallback? result,
+  String? fromURL,
+  String? innerURL,
 });
 
 final _queryParamsDecodedOf = Expando<bool>();
@@ -49,8 +51,7 @@ final _queryParamsDecodedOf = Expando<bool>();
 extension NavigatorRouteCustomHandlerX on NavigatorRouteCustomHandler {
   bool get queryParamsDecoded => _queryParamsDecodedOf[this] ?? true;
 
-  set queryParamsDecoded(final bool value) =>
-      _queryParamsDecodedOf[this] = value;
+  set queryParamsDecoded(bool value) => _queryParamsDecodedOf[this] = value;
 }
 
 typedef RegisterRouteCustomHandlerFunc = void Function(
@@ -58,6 +59,9 @@ typedef RegisterRouteCustomHandlerFunc = void Function(
   NavigatorRouteCustomHandler, {
   bool queryParamsDecoded,
 });
+
+const navigatorResultTypeHandled = 0;
+const navigatorResultTypeNotHandled = -1;
 
 /// Signature of route action.
 ///

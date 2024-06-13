@@ -30,22 +30,36 @@ import 'navigator_types.dart';
 import 'thrio_navigator_implement.dart';
 
 abstract class ThrioNavigator {
+  /// Register a handle called before push.
+  ///
+  static VoidCallback registerPushBeginHandle(NavigatorPushHandle handle) =>
+      ThrioNavigatorImplement.shared().registerPushBeginHandle(handle);
+
+  /// Register a handle called before the push return.
+  ///
+  static VoidCallback registerPushReturnHandle(NavigatorPushHandle handle) =>
+      ThrioNavigatorImplement.shared().registerPushReturnHandle(handle);
+
   /// Push the page onto the navigation stack.
   ///
   /// If a native page builder exists for the `url`, open the native page,
   /// otherwise open the flutter page.
   ///
   static Future<TPopParams?> push<TParams, TPopParams>({
-    required final String url,
-    final TParams? params,
-    final bool animated = true,
-    final NavigatorIntCallback? result,
+    required String url,
+    TParams? params,
+    bool animated = true,
+    NavigatorIntCallback? result,
+    String? fromURL,
+    String? innerURL,
   }) =>
       ThrioNavigatorImplement.shared().push<TParams, TPopParams>(
         url: url,
         params: params,
         animated: animated,
         result: result,
+        fromURL: fromURL,
+        innerURL: innerURL,
       );
 
   /// Push the page onto the navigation stack, and remove all old page.
@@ -54,16 +68,20 @@ abstract class ThrioNavigator {
   /// otherwise open the flutter page.
   ///
   static Future<TPopParams?> pushSingle<TParams, TPopParams>({
-    required final String url,
-    final TParams? params,
-    final bool animated = true,
-    final NavigatorIntCallback? result,
+    required String url,
+    TParams? params,
+    bool animated = true,
+    NavigatorIntCallback? result,
+    String? fromURL,
+    String? innerURL,
   }) =>
       ThrioNavigatorImplement.shared().pushSingle<TParams, TPopParams>(
         url: url,
         params: params,
         animated: animated,
         result: result,
+        fromURL: fromURL,
+        innerURL: innerURL,
       );
 
   /// Push the page onto the navigation stack, and remove the top page.
@@ -72,16 +90,18 @@ abstract class ThrioNavigator {
   /// otherwise open the flutter page.
   ///
   static Future<TPopParams?> pushReplace<TParams, TPopParams>({
-    required final String url,
-    final TParams? params,
-    final bool animated = true,
-    final NavigatorIntCallback? result,
+    required String url,
+    TParams? params,
+    bool animated = true,
+    NavigatorIntCallback? result,
+    String? fromURL,
   }) =>
       ThrioNavigatorImplement.shared().pushReplace<TParams, TPopParams>(
         url: url,
         params: params,
         animated: animated,
         result: result,
+        fromURL: fromURL,
       );
 
   /// Push the page onto the navigation stack, and remove until the last page with `toUrl`.
@@ -90,11 +110,12 @@ abstract class ThrioNavigator {
   /// otherwise open the flutter page.
   ///
   static Future<TPopParams?> pushAndRemoveTo<TParams, TPopParams>({
-    required final String url,
-    required final String toUrl,
-    final TParams? params,
-    final bool animated = true,
-    final NavigatorIntCallback? result,
+    required String url,
+    required String toUrl,
+    TParams? params,
+    bool animated = true,
+    NavigatorIntCallback? result,
+    String? fromURL,
   }) =>
       ThrioNavigatorImplement.shared().pushAndRemoveTo<TParams, TPopParams>(
         url: url,
@@ -102,6 +123,7 @@ abstract class ThrioNavigator {
         params: params,
         animated: animated,
         result: result,
+        fromURL: fromURL,
       );
 
   /// Push the page onto the navigation stack, and remove until the first page with `toUrl`.
@@ -110,11 +132,12 @@ abstract class ThrioNavigator {
   /// otherwise open the flutter page.
   ///
   static Future<TPopParams?> pushAndRemoveToFirst<TParams, TPopParams>({
-    required final String url,
-    required final String toUrl,
-    final TParams? params,
-    final bool animated = true,
-    final NavigatorIntCallback? result,
+    required String url,
+    required String toUrl,
+    TParams? params,
+    bool animated = true,
+    NavigatorIntCallback? result,
+    String? fromURL,
   }) =>
       ThrioNavigatorImplement.shared()
           .pushAndRemoveToFirst<TParams, TPopParams>(
@@ -123,6 +146,7 @@ abstract class ThrioNavigator {
         params: params,
         animated: animated,
         result: result,
+        fromURL: fromURL,
       );
 
   /// Push the page onto the navigation stack, and remove until the last page with `toUrl` satisfies the `predicate`.
@@ -131,11 +155,12 @@ abstract class ThrioNavigator {
   /// otherwise open the flutter page.
   ///
   static Future<TPopParams?> pushAndRemoveUntil<TParams, TPopParams>({
-    required final String url,
-    required final bool Function(String url) predicate,
-    final TParams? params,
-    final bool animated = true,
-    final NavigatorIntCallback? result,
+    required String url,
+    required bool Function(String url) predicate,
+    TParams? params,
+    bool animated = true,
+    NavigatorIntCallback? result,
+    String? fromURL,
   }) =>
       ThrioNavigatorImplement.shared().pushAndRemoveUntil<TParams, TPopParams>(
         url: url,
@@ -143,6 +168,7 @@ abstract class ThrioNavigator {
         params: params,
         animated: animated,
         result: result,
+        fromURL: fromURL,
       );
 
   /// Push the page onto the navigation stack, and remove until the first page with `toUrl` satisfies the `predicate`.
@@ -151,11 +177,12 @@ abstract class ThrioNavigator {
   /// otherwise open the flutter page.
   ///
   static Future<TPopParams?> pushAndRemoveUntilFirst<TParams, TPopParams>({
-    required final String url,
-    required final bool Function(String url) predicate,
-    final TParams? params,
-    final bool animated = true,
-    final NavigatorIntCallback? result,
+    required String url,
+    required bool Function(String url) predicate,
+    TParams? params,
+    bool animated = true,
+    NavigatorIntCallback? result,
+    String? fromURL,
   }) =>
       ThrioNavigatorImplement.shared()
           .pushAndRemoveUntilFirst<TParams, TPopParams>(
@@ -164,6 +191,7 @@ abstract class ThrioNavigator {
         params: params,
         animated: animated,
         result: result,
+        fromURL: fromURL,
       );
 
   /// Send a notification to all page.
@@ -172,8 +200,8 @@ abstract class ThrioNavigator {
   /// Notifications with the same `name` will be overwritten.
   ///
   static Future<bool> notifyAll<TParams>({
-    required final String name,
-    final TParams? params,
+    required String name,
+    TParams? params,
   }) =>
       ThrioNavigatorImplement.shared()
           .notifyAll<TParams>(name: name, params: params);
@@ -184,9 +212,9 @@ abstract class ThrioNavigator {
   /// Notifications with the same `name` will be overwritten.
   ///
   static Future<bool> notify<TParams>({
-    required final String url,
-    required final String name,
-    final TParams? params,
+    required String url,
+    required String name,
+    TParams? params,
   }) =>
       ThrioNavigatorImplement.shared().notifyLast<TParams>(
         url: url,
@@ -200,9 +228,9 @@ abstract class ThrioNavigator {
   /// Notifications with the same `name` will be overwritten.
   ///
   static Future<bool> notifyFrist<TParams>({
-    required final String url,
-    required final String name,
-    final TParams? params,
+    required String url,
+    required String name,
+    TParams? params,
   }) =>
       ThrioNavigatorImplement.shared().notifyFirst<TParams>(
         url: url,
@@ -216,9 +244,9 @@ abstract class ThrioNavigator {
   /// Notifications with the same `name` will be overwritten.
   ///
   static Future<bool> notifyFirstWhere<TParams>({
-    required final bool Function(String url) predicate,
-    required final String name,
-    final TParams? params,
+    required bool Function(String url) predicate,
+    required String name,
+    TParams? params,
   }) =>
       ThrioNavigatorImplement.shared().notifyFirstWhere<TParams>(
         predicate: predicate,
@@ -232,9 +260,9 @@ abstract class ThrioNavigator {
   /// Notifications with the same `name` will be overwritten.
   ///
   static Future<bool> notifyWhere<TParams>({
-    required final bool Function(String url) predicate,
-    required final String name,
-    final TParams? params,
+    required bool Function(String url) predicate,
+    required String name,
+    TParams? params,
   }) =>
       ThrioNavigatorImplement.shared().notifyWhere<TParams>(
         predicate: predicate,
@@ -248,9 +276,9 @@ abstract class ThrioNavigator {
   /// Notifications with the same `name` will be overwritten.
   ///
   static Future<bool> notifyLastWhere<TParams>({
-    required final bool Function(String url) predicate,
-    required final String name,
-    final TParams? params,
+    required bool Function(String url) predicate,
+    required String name,
+    TParams? params,
   }) =>
       ThrioNavigatorImplement.shared().notifyLastWhere<TParams>(
         predicate: predicate,
@@ -259,9 +287,9 @@ abstract class ThrioNavigator {
       );
 
   static Future<TResult?> act<TParams, TResult>({
-    required final String url,
-    required final String action,
-    final TParams? params,
+    required String url,
+    required String action,
+    TParams? params,
   }) =>
       ThrioNavigatorImplement.shared()
           .act<TParams, TResult>(url: url, action: action, params: params);
@@ -269,8 +297,8 @@ abstract class ThrioNavigator {
   /// Maybe pop a page from the navigation stack.
   ///
   static Future<bool> maybePop<TParams>({
-    final TParams? params,
-    final bool animated = true,
+    TParams? params,
+    bool animated = true,
   }) =>
       ThrioNavigatorImplement.shared().maybePop<TParams>(
         params: params,
@@ -280,35 +308,48 @@ abstract class ThrioNavigator {
   /// Pop a page from the navigation stack.
   ///
   static Future<bool> pop<TParams>({
-    final TParams? params,
-    final bool animated = true,
+    TParams? params,
+    bool animated = true,
   }) =>
       ThrioNavigatorImplement.shared().pop<TParams>(
         params: params,
         animated: animated,
       );
 
+  /// Pop the top Flutter page.
+  ///
+  static Future<bool> popFlutter<TParams>({
+    TParams? params,
+    bool animated = true,
+  }) =>
+      ThrioNavigatorImplement.shared().popFlutter<TParams>(
+        params: params,
+        animated: animated,
+      );
+
   /// Pop the page in the navigation stack until the first page.
   ///
-  static Future<bool> popToRoot({final bool animated = true}) =>
+  static Future<bool> popToRoot({bool animated = true}) =>
       ThrioNavigatorImplement.shared().popToRoot(animated: animated);
 
   /// Pop the page in the navigation stack until the last page with `url`.
   ///
   static Future<bool> popTo({
-    required final String url,
-    final bool animated = true,
+    required String url,
+    int? index,
+    bool animated = true,
   }) =>
       ThrioNavigatorImplement.shared().popTo(
         url: url,
+        index: index,
         animated: animated,
       );
 
   /// Pop the page in the navigation stack until the first page with `url`.
   ///
   static Future<bool> popToFirst({
-    required final String url,
-    final bool animated = true,
+    required String url,
+    bool animated = true,
   }) =>
       ThrioNavigatorImplement.shared().popToFirst(
         url: url,
@@ -318,8 +359,8 @@ abstract class ThrioNavigator {
   /// Pop the page in the navigation stack until the last page with `url` satisfies the `predicate`.
   ///
   static Future<bool> popUntil({
-    required final bool Function(String url) predicate,
-    final bool animated = true,
+    required bool Function(String url) predicate,
+    bool animated = true,
   }) =>
       ThrioNavigatorImplement.shared()
           .popUntil(predicate: predicate, animated: animated);
@@ -327,8 +368,8 @@ abstract class ThrioNavigator {
   /// Pop the page in the navigation stack until the first page with `url` satisfies the `predicate`.
   ///
   static Future<bool> popUntilFirst({
-    required final bool Function(String url) predicate,
-    final bool animated = true,
+    required bool Function(String url) predicate,
+    bool animated = true,
   }) =>
       ThrioNavigatorImplement.shared()
           .popUntilFirst(predicate: predicate, animated: animated);
@@ -336,8 +377,8 @@ abstract class ThrioNavigator {
   /// Remove the last page with `url` in the navigation stack.
   ///
   static Future<bool> remove({
-    required final String url,
-    final bool animated = true,
+    required String url,
+    bool animated = true,
   }) =>
       ThrioNavigatorImplement.shared().remove(
         url: url,
@@ -347,8 +388,8 @@ abstract class ThrioNavigator {
   /// Remove the first page with `url` in the navigation stack.
   ///
   static Future<bool> removeFirst({
-    required final String url,
-    final bool animated = true,
+    required String url,
+    bool animated = true,
   }) =>
       ThrioNavigatorImplement.shared().removeFirst(
         url: url,
@@ -358,11 +399,11 @@ abstract class ThrioNavigator {
   /// Remove pages below the last page in the navigation stack.
   /// Until the last page with `url` satisfies the `predicate`.
   ///
-  static Future<bool> removeBlowUntil({
-    required final bool Function(String url) predicate,
-    final bool animated = true,
+  static Future<bool> removeBelowUntil({
+    required bool Function(String url) predicate,
+    bool animated = true,
   }) =>
-      ThrioNavigatorImplement.shared().removeBlowUntil(
+      ThrioNavigatorImplement.shared().removeBelowUntil(
         predicate: predicate,
         animated: animated,
       );
@@ -370,19 +411,18 @@ abstract class ThrioNavigator {
   /// Remove pages below the last page  in the navigation stack.
   /// Until the first page with `url` satisfies the `predicate`.
   ///
-  static Future<bool> removeBlowUntilFirst({
-    required final bool Function(String url) predicate,
-    final bool animated = true,
+  static Future<bool> removeBelowUntilFirst({
+    required bool Function(String url) predicate,
+    bool animated = true,
   }) =>
-      ThrioNavigatorImplement.shared().removeBlowUntilFirst(
+      ThrioNavigatorImplement.shared().removeBelowUntilFirst(
         predicate: predicate,
         animated: animated,
       );
 
   /// Remove all pages with `url` in the navigation stack, except the one with index equals to `excludeIndex`.
   ///
-  static Future<int> removeAll(
-          {required final String url, final int excludeIndex = 0}) =>
+  static Future<int> removeAll({required String url, int excludeIndex = 0}) =>
       ThrioNavigatorImplement.shared()
           .removeAll(url: url, excludeIndex: excludeIndex);
 
@@ -391,8 +431,8 @@ abstract class ThrioNavigator {
   /// Both `url` and `newUrl` must be flutter page.
   ///
   static Future<int> replace({
-    required final String url,
-    required final String newUrl,
+    required String url,
+    required String newUrl,
   }) =>
       ThrioNavigatorImplement.shared().replace(
         url: url,
@@ -404,8 +444,8 @@ abstract class ThrioNavigator {
   /// Both `url` and `newUrl` must be flutter page.
   ///
   static Future<int> replaceFirst({
-    required final String url,
-    required final String newUrl,
+    required String url,
+    required String newUrl,
   }) =>
       ThrioNavigatorImplement.shared().replaceFirst(
         url: url,
@@ -419,9 +459,9 @@ abstract class ThrioNavigator {
   /// Build widget with `url` and `params`.
   ///
   static Widget? build<TParams>({
-    required final String url,
-    final int? index,
-    final TParams? params,
+    required String url,
+    int? index,
+    TParams? params,
   }) =>
       ThrioNavigatorImplement.shared().build(
         url: url,
@@ -432,28 +472,26 @@ abstract class ThrioNavigator {
   /// Returns the route of the page that was last pushed to the navigation
   /// stack.
   ///
-  static Future<RouteSettings?> lastRoute({final String? url}) =>
+  static Future<RouteSettings?> lastRoute({String? url}) =>
       ThrioNavigatorImplement.shared().lastRoute(url: url);
 
   /// Returns all route of the page with `url` in the navigation stack.
   ///
-  static Future<List<RouteSettings>> allRoutes({final String? url}) =>
+  static Future<List<RouteSettings>> allRoutes({String? url}) =>
       ThrioNavigatorImplement.shared().allRoutes(url: url);
 
   /// Returns the flutter route of the page that was last pushed to the
   /// navigation stack matching `url` and `index`.
   ///
-  static NavigatorRoute? lastFlutterRoute(
-          {final String? url, final int? index}) =>
+  static NavigatorRoute? lastFlutterRoute({String? url, int? index}) =>
       ThrioNavigatorImplement.shared().lastFlutterRoute(url: url, index: index);
 
   /// Returns all flutter route of the page with `url` and `index` in the navigation stack.
   ///
-  static List<NavigatorRoute> allFlutterRoutes(
-          {final String? url, final int? index}) =>
+  static List<NavigatorRoute> allFlutterRoutes({String? url, int? index}) =>
       ThrioNavigatorImplement.shared().allFlutterRoutes(url: url, index: index);
 
   /// Returns true if there is a dialog route on the last matching `url` and `index`.
-  static bool isDialogAbove({final String? url, final int? index}) =>
+  static bool isDialogAbove({String? url, int? index}) =>
       ThrioNavigatorImplement.shared().isDialogAbove(url: url, index: index);
 }

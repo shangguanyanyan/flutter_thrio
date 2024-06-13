@@ -44,16 +44,6 @@
     return self;
 }
 
-#pragma mark - NavigatorFlutterEngineIdentifier methods
-
-- (NSString *)entrypoint {
-    return _channel.entrypoint;
-}
-
-- (NSUInteger)pageId {
-    return _channel.pageId;
-}
-
 #pragma mark - NavigatorRouteObserverProtocol methods
 
 /// Send `didPush` to all flutter engines.
@@ -105,7 +95,6 @@
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
         SEL selector = NSSelectorFromString([NSString stringWithFormat:@"%@:", method]);
         [ThrioModule performSelector:selector withObject:routeSettings];
-        [ThrioModule.routeObservers performSelector:selector withObject:routeSettings];
 #pragma clang diagnostic pop
     }];
 }

@@ -34,11 +34,15 @@ object ThrioNavigator {
         url: String,
         params: T? = null,
         animated: Boolean = true,
+        fromURL: String? = null,
         poppedResult: NullableAnyCallback? = null,
         result: NullableIntCallback = {}
     ) = NavigationController.Push.push<T>(
         url, params, animated,
         NAVIGATION_NATIVE_ENTRYPOINT,
+        fromURL,
+        null,
+        null,
         NAVIGATION_ROUTE_PAGE_ID_NONE,
         poppedResult,
         result
@@ -48,11 +52,15 @@ object ThrioNavigator {
     fun push(
         url: String,
         animated: Boolean = true,
+        fromURL: String? = null,
         poppedResult: NullableAnyCallback? = null,
         result: NullableIntCallback = {}
     ) = NavigationController.Push.push(
         url, null, animated,
         NAVIGATION_NATIVE_ENTRYPOINT,
+        fromURL,
+        null,
+        null,
         NAVIGATION_ROUTE_PAGE_ID_NONE,
         poppedResult,
         result
@@ -97,8 +105,20 @@ object ThrioNavigator {
     ) = NavigationController.Pop.pop<T>(params, animated, result)
 
     @JvmStatic
+    @JvmOverloads
+    fun <T> popFlutter(
+        params: T? = null,
+        animated: Boolean = true,
+        result: BooleanCallback = {}
+    ) = NavigationController.Pop.popFlutter<T>(params, animated, result)
+
+    @JvmStatic
     fun pop(animated: Boolean = true, result: BooleanCallback = {}) =
         NavigationController.Pop.pop(null, animated, result)
+
+    @JvmStatic
+    fun popFlutter(animated: Boolean = true, result: BooleanCallback = {}) =
+        NavigationController.Pop.popFlutter(null, animated, result)
 
     @JvmStatic
     @JvmOverloads

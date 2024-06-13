@@ -1,10 +1,10 @@
-// Copyright (c) 2023 foxsofter.
+// Copyright (c) 2024 foxsofter.
 //
 // ignore_for_file: avoid_as
 
 part of 'home.page.dart';
 
-extension Home on _HomePageState {
+extension Home on State<HomePage> {
   /// hello, this is a list.
   ///
   List<String> get strList => widget.getListParam<String>('strList');

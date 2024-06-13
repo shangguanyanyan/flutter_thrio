@@ -52,6 +52,7 @@ NS_ASSUME_NONNULL_BEGIN
         [self _onNotify];
         [self _onMaybePop];
         [self _onPop];
+        [self _onPopFlutter];
         [self _onPopTo];
         [self _onRemove];
         [self _onReplace];
@@ -66,16 +67,6 @@ NS_ASSUME_NONNULL_BEGIN
         [self _onHotRestart];
     }
     return self;
-}
-
-#pragma mark - NavigatorFlutterEngineIdentifier methods
-
-- (NSString *)entrypoint {
-    return _channel.entrypoint;
-}
-
-- (NSUInteger)pageId {
-    return _channel.pageId;
 }
 
 #pragma mark - on channel methods
@@ -111,18 +102,23 @@ NS_ASSUME_NONNULL_BEGIN
         }
         id params = [arguments[@"params"] isKindOfClass:NSNull.class] ? nil : arguments[@"params"];
         BOOL animated = [arguments[@"animated"] boolValue];
+        NSString *fromURL = arguments[@"fromURL"];
+        NSString *prevURL = arguments[@"prevURL"];
+        NSString *innerURL = arguments[@"innerURL"];
         NavigatorVerbose(@"on push: %@", url);
         __strong typeof(weakself) strongSelf = weakself;
         [ThrioNavigator _pushUrl:url
                           params:params
                         animated:animated
-                  fromEntrypoint:strongSelf.channel.entrypoint
-                      fromPageId:strongSelf.channel.pageId
+                  fromEntrypoint:strongSelf.channel.engine.entrypoint
                           result:^(NSNumber *idx) {
             if (result) {
                 result(idx);
             }
         }
+                         fromURL:fromURL
+                         prevURL:prevURL
+                        innerURL:innerURL
                     poppedResult:nil];
     }];
 }
@@ -165,6 +161,24 @@ NS_ASSUME_NONNULL_BEGIN
         [ThrioNavigator _popParams:params
                           animated:animated
                             result:^(BOOL r) {
+            if (result) {
+                result(@(r));
+            }
+        }];
+    }];
+}
+
+- (void)_onPopFlutter {
+    [_channel registryMethod:@"popFlutter"
+                     handler:
+     ^void (NSDictionary<NSString *, id> *arguments,
+            ThrioIdCallback _Nullable result) {
+        id params = [arguments[@"params"] isKindOfClass:NSNull.class] ? nil : arguments[@"params"];
+        BOOL animated = [arguments[@"animated"] boolValue];
+        NavigatorVerbose(@"on pop");
+        [ThrioNavigator _popFlutterParams:params
+                                 animated:animated
+                                   result:^(BOOL r) {
             if (result) {
                 result(@(r));
             }

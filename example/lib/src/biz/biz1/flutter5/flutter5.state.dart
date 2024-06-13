@@ -1,7 +1,7 @@
-// Copyright (c) 2023 foxsofter.
+// Copyright (c) 2024 foxsofter.
 //
 // ignore_for_file: avoid_as
 
 part of 'flutter5.page.dart';
 
-extension Flutter5 on _Flutter5PageState {}
+extension Flutter5 on State<Flutter5Page> {}

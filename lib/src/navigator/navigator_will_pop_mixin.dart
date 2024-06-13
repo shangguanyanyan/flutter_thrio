@@ -40,12 +40,14 @@ mixin NavigatorWillPopMixin<T extends StatefulWidget> on State<T> {
 
   ModalRoute<dynamic>? _route;
 
+  bool _added = false;
+
   VoidCallback? _callback;
 
   static final _observerMaps = <GlobalKey<NavigatorState>, NavigatorObserver>{};
 
   static NavigatorObserver navigatorObserverFor(
-    final GlobalKey<NavigatorState> navigatorStateKey,
+    GlobalKey<NavigatorState> navigatorStateKey,
   ) =>
       _observerMaps[navigatorStateKey] ??
       (_observerMaps[navigatorStateKey] = _InternalNavigatorObserver());
@@ -59,7 +61,7 @@ mixin NavigatorWillPopMixin<T extends StatefulWidget> on State<T> {
   }
 
   @override
-  void didUpdateWidget(covariant final T oldWidget) {
+  void didUpdateWidget(covariant T oldWidget) {
     super.didUpdateWidget(oldWidget);
     _init();
   }
@@ -75,19 +77,29 @@ mixin NavigatorWillPopMixin<T extends StatefulWidget> on State<T> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _added = false;
+    _route?.removeScopedWillPopCallback(onWillPop);
     _route = ModalRoute.of(context);
+    _checkWillPop();
   }
 
   void _checkWillPop() {
     if (internalNavigatorKey.currentState?.canPop() == true) {
-      _route?.addScopedWillPopCallback(onWillPop);
+      if (!_added) {
+        _added = true;
+        _route?.addScopedWillPopCallback(onWillPop);
+      }
     } else {
-      _route?.removeScopedWillPopCallback(onWillPop);
+      if (_added) {
+        _added = false;
+        _route?.removeScopedWillPopCallback(onWillPop);
+      }
     }
   }
 
   @override
   void dispose() {
+    _added = false;
     _route?.removeScopedWillPopCallback(onWillPop);
     _callback?.call();
     super.dispose();
@@ -99,8 +111,8 @@ class _InternalNavigatorObserver extends NavigatorObserver {
 
   @override
   void didPush(
-    final Route<dynamic> route,
-    final Route<dynamic>? previousRoute,
+    Route<dynamic> route,
+    Route<dynamic>? previousRoute,
   ) {
     for (final it in delegates) {
       it._checkWillPop();
@@ -109,8 +121,8 @@ class _InternalNavigatorObserver extends NavigatorObserver {
 
   @override
   void didPop(
-    final Route<dynamic> route,
-    final Route<dynamic>? previousRoute,
+    Route<dynamic> route,
+    Route<dynamic>? previousRoute,
   ) {
     for (final it in delegates) {
       it._checkWillPop();
@@ -119,9 +131,16 @@ class _InternalNavigatorObserver extends NavigatorObserver {
 
   @override
   void didRemove(
-    final Route<dynamic> route,
-    final Route<dynamic>? previousRoute,
+    Route<dynamic> route,
+    Route<dynamic>? previousRoute,
   ) {
+    for (final it in delegates) {
+      it._checkWillPop();
+    }
+  }
+
+  @override
+  void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
     for (final it in delegates) {
       it._checkWillPop();
     }
