@@ -46,7 +46,7 @@
     UINavigationController *topmostNavigationController = nil;
     UIViewController *topmostViewController = self.delegate.window.rootViewController;
     while (true) {
-        if ([topmostViewController isKindOfClass:[NavigatorNavigationController class]]) {
+        if ([topmostViewController isKindOfClass:[UINavigationController class]]) {
             topmostNavigationController = (UINavigationController *)topmostViewController;
         }
         if (topmostViewController.presentedViewController) {
